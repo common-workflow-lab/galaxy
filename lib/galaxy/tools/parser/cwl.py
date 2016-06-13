@@ -44,6 +44,12 @@ class CwlToolSource(ToolSource):
     def parse_command(self):
         return "$__cwl_command"
 
+    def parse_edam_operations(self):
+        return []
+
+    def parse_edam_topics(self):
+        return []
+
     def parse_environment_variables(self):
         environment_variables = []
         # TODO: Is this even possible from here, should instead this be moved

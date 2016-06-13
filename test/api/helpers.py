@@ -1,9 +1,13 @@
+import os.path
 from base import api_asserts
 from operator import itemgetter
 
 import time
 import json
 import StringIO
+
+from six import iteritems
+
 from pkg_resources import resource_string
 
 # Simple workflow that takes an input and call cat wrapper on it.
@@ -45,6 +49,48 @@ def skip_without_tool( tool_id ):
     return method_wrapper
 
 
+# Note: Newer than planemo version as of 2/4/16, copy back into planemo
+def galactic_job_json(job, test_data_directory, upload_func):
+    state = {"uploaded": False}
+
+    def upload(file_path):
+        state["uploaded"] = True
+        if not os.path.isabs(file_path):
+            file_path = os.path.join(test_data_directory, file_path)
+
+        return upload_func(file_path)
+
+    def replacement_item(value):
+        if not isinstance(value, dict):
+            return value
+
+        type_class = value.get("class", None)
+        if type_class != "File":
+            return value
+
+        file_path = value.get("path", None)
+        if file_path is None:
+            return value
+
+        upload_response = upload(file_path)
+        dataset_id = upload_response["outputs"][0]["id"]
+
+        return {"src": "hda", "id": dataset_id}
+
+    replace_keys = {}
+    for key, value in iteritems(job):
+        if isinstance(value, dict):
+            replace_keys[key] = replacement_item(value)
+        elif isinstance(value, list):
+            new_list = []
+            for item in value:
+                new_list.append(replacement_item(item))
+            replace_keys[key] = new_list
+
+    job.update(replace_keys)
+    return job, state["uploaded"]
+
+
 # Deprecated mixin, use dataset populator instead.
 # TODO: Rework existing tests to target DatasetPopulator in a setup method instead.
 class TestsDatasets:
@@ -65,19 +111,37 @@ class TestsDatasets:
         return DatasetPopulator( self.galaxy_interactor ).run_tool_payload( tool_id, inputs, history_id, **kwds )
 
 
+class CwlToolRun( object ):
+
+    def __init__( self, history_id, run_response ):
+        self.history_id = history_id
+        self.run_response = run_response
+
+    @property
+    def job_id( self ):
+        return self.run_response[ "jobs" ][ 0 ][ "id" ]
+
+    def output(self, output_index):
+        return self.run_response["outputs"][output_index]
+
+
 class BaseDatasetPopulator( object ):
     """ Abstract description of API operations optimized for testing
     Galaxy - implementations must implement _get and _post.
     """
 
     def new_dataset( self, history_id, content='TestData123', wait=False, **kwds ):
+        run_response = self.new_dataset_request(history_id, content=content, wait=wait, **kwds)
+        return run_response["outputs"][0]
+
+    def new_dataset_request( self, history_id, content='TestData123', wait=False, **kwds ):
         payload = self.upload_payload( history_id, content, **kwds )
         run_response = self._post( "tools", data=payload ).json()
         if wait:
             job = run_response["jobs"][0]
             self.wait_for_job(job["id"])
             self.wait_for_history(history_id, assert_ok=True)
-        return run_response["outputs"][0]
+        return run_response
 
     def wait_for_history( self, history_id, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
         try:
@@ -131,6 +195,10 @@ class BaseDatasetPopulator( object ):
             kwds[ "__files" ] = { "files_0|file_data": inputs[ "files_0|file_data" ] }
             del inputs[ "files_0|file_data" ]
 
+        ir = kwds.get("inputs_representation", None)
+        if ir is None and "inputs_representation" in kwds:
+            del kwds["inputs_representation"]
+
         return dict(
             tool_id=tool_id,
             inputs=json.dumps(inputs),
@@ -138,25 +206,65 @@ class BaseDatasetPopulator( object ):
             **kwds
         )
 
-    def run_tool( self, tool_id, inputs, history_id, **kwds ):
+    def run_tool( self, tool_id, inputs, history_id, assert_ok=True, **kwds ):
         payload = self.run_tool_payload( tool_id, inputs, history_id, **kwds )
         tool_response = self._post( "tools", data=payload )
-        api_asserts.assert_status_code_is( tool_response, 200 )
-        return tool_response.json()
+        if assert_ok:
+            api_asserts.assert_status_code_is( tool_response, 200 )
+            return tool_response.json()
+        else:
+            return tool_response
+
+    def run_cwl_tool( self, tool_id, json_path=None, job=None, test_data_directory=None, history_id=None, assert_ok=True ):
+        if test_data_directory is None and json_path is not None:
+            test_data_directory = os.path.dirname(json_path)
+        if json_path is not None:
+            assert job is None
+            with open( json_path, "r" ) as f:
+                job_as_dict = json.load( f )
+        else:
+            job_as_dict = job
+
+        if history_id is None:
+            history_id = self.new_history()
+
+        def upload_path(path):
+            with open( path, "rb" ) as f:
+                content = f.read()
+            return self.new_dataset_request(
+                history_id=history_id,
+                content=content
+            )
+
+        job_as_dict, datasets_uploaded = galactic_job_json(job_as_dict, test_data_directory, upload_path)
+        if datasets_uploaded:
+            self.wait_for_history( history_id=history_id, assert_ok=True )
+        run_response = self.run_tool( tool_id, job_as_dict, history_id, inputs_representation="cwl", assert_ok=assert_ok )
+        run_object = CwlToolRun( history_id, run_response )
+        if assert_ok:
+            final_state = self.wait_for_job( run_object.job_id )
+            assert final_state == "ok"
+        return run_object
 
     def get_history_dataset_content( self, history_id, wait=True, **kwds ):
-        dataset_id = self.__history_dataset_id( history_id, wait=wait, **kwds )
+        dataset_id = self.__history_content_id( history_id, wait=wait, **kwds )
         display_response = self.__get_contents_request( history_id, "/%s/display" % dataset_id )
         assert display_response.status_code == 200, display_response.content
         return display_response.content
 
     def get_history_dataset_details( self, history_id, **kwds ):
-        dataset_id = self.__history_dataset_id( history_id, **kwds )
+        dataset_id = self.__history_content_id( history_id, **kwds )
         details_response = self.__get_contents_request( history_id, "/datasets/%s" % dataset_id )
         assert details_response.status_code == 200
         return details_response.json()
 
-    def __history_dataset_id( self, history_id, wait=True, **kwds ):
+    def get_history_collection_details( self, history_id, **kwds ):
+        hdca_id = self.__history_content_id( history_id, **kwds )
+        details_response = self.__get_contents_request( history_id, "/dataset_collections/%s" % hdca_id )
+        assert details_response.status_code == 200, details_response.content
+        return details_response.json()
+
+    def __history_content_id( self, history_id, wait=True, **kwds ):
         if wait:
             assert_ok = kwds.get( "assert_ok", True )
             self.wait_for_history( history_id, assert_ok=assert_ok )

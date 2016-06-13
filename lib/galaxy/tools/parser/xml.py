@@ -27,7 +27,8 @@ from galaxy.tools.deps import requirements
 from .output_objects import (
     ToolOutput,
     ToolOutputCollection,
-    ToolOutputCollectionStructure
+    ToolOutputCollectionStructure,
+    ToolExpressionOutput,
 )
 
 
@@ -108,6 +109,12 @@ class XmlToolSource(ToolSource):
     def parse_command(self):
         command_el = self._command_el
         return ( ( command_el is not None ) and command_el.text ) or None
+
+    def parse_expression(self):
+        """ Return string contianing command to run.
+        """
+        expression_el = self.root.find("expression")
+        return ( ( expression_el is not None ) and expression_el.text ) or None
 
     def parse_environment_variables(self):
         environment_variables_el = self.root.find("environment_variables")
@@ -209,9 +216,12 @@ class XmlToolSource(ToolSource):
             data_dict[output_def.name] = output_def
             return output_def
 
-        map(_parse, out_elem.findall("data"))
+        def _parse_expression(output_elem, **kwds):
+            output_def = self._parse_expression_output(output_elem, tool, **kwds)
+            data_dict[output_def.name] = output_def
+            return output_def
 
-        for collection_elem in out_elem.findall("collection"):
+        def _parse_collection(collection_elem):
             name = collection_elem.get( "name" )
             label = xml_text( collection_elem, "label" )
             default_format = collection_elem.get( "format", "data" )
@@ -265,6 +275,22 @@ class XmlToolSource(ToolSource):
                 output_collection.outputs[output_name] = data
             output_collections[ name ] = output_collection
 
+        for out_child in out_elem.getchildren():
+            if out_child.tag == "data":
+                _parse(out_child)
+            elif out_child.tag == "collection":
+                _parse_collection(out_child)
+            elif out_child.tag == "output":
+                output_type = out_child.get("type")
+                if output_type == "data":
+                    _parse(out_child)
+                elif output_type == "collection":
+                    _parse_collection(out_child)
+                else:
+                    _parse_expression(out_child)
+            else:
+                log.warn("Unknown output tag encountered [%s]" % out_child.tag)
+
         for output_def in data_dict.values():
             outputs[output_def.name] = output_def
         return outputs, output_collections
@@ -276,6 +302,7 @@ class XmlToolSource(ToolSource):
         default_format="data",
         default_format_source=None,
         default_metadata_source="",
+        expression_type=None,
     ):
         output = ToolOutput( data_elem.get("name") )
         output_format = data_elem.get("format", default_format)
@@ -297,6 +324,22 @@ class XmlToolSource(ToolSource):
         output.hidden = string_as_bool( data_elem.get("hidden", "") )
         output.actions = ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
         output.dataset_collector_descriptions = dataset_collector_descriptions_from_elem( data_elem, legacy=self.legacy_defaults )
+        return output
+
+    def _parse_expression_output(self, output_elem, tool, **kwds):
+        output_type = output_elem.get("type")
+        from_expression = output_elem.get("from")
+        output = ToolExpressionOutput(
+            output_elem.get("name"),
+            output_type,
+            from_expression,
+        )
+        output.path = output_elem.get("value")
+        output.label = xml_text( output_elem, "label" )
+
+        output.hidden = string_as_bool( output_elem.get("hidden", "") )
+        output.actions = ToolOutputActionGroup( output, output_elem.find( 'actions' ) )
+        output.dataset_collector_descriptions = []
         return output
 
     def parse_stdio(self):

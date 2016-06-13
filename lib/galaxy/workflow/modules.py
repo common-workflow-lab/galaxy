@@ -19,6 +19,7 @@ from galaxy.tools.parameters.basic import (
 )
 from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.tools import DefaultToolState
+from galaxy.tools import ToolInputsNotReadyException
 from galaxy.util import odict
 from galaxy.util.bunch import Bunch
 from galaxy.web.framework import formbuilder
@@ -218,6 +219,7 @@ class SimpleWorkflowModule( WorkflowModule ):
         step.type = self.type
         step.tool_id = None
         step.tool_version = None
+        step.tool_hash = None
         step.tool_inputs = self.state
 
     def get_state( self, state=None ):
@@ -657,6 +659,75 @@ class InputParameterModule( SimpleWorkflowModule ):
         return job
 
 
+class ExpressionModule( SimpleWorkflowModule ):
+    default_expression = "true"
+    default_inputs = []
+    type = "expression"
+    expression = default_expression
+    inputs = default_inputs
+    state_fields = [
+        "expression",
+        "inputs",
+    ]
+
+    @classmethod
+    def default_state( Class ):
+        return dict(
+            expression=Class.default_expression,
+            inputs=Class.default_inputs[:],
+        )
+
+    def _abstract_config_form( self ):
+        form = formbuilder.FormBuilder(
+            title=self.name
+        ).add_text(
+            "expression", "Expression", value=self.state['expression']
+        )
+        # TODO: add ability to specify input...
+        return form
+
+    def get_runtime_inputs( self, **kwds ):
+        input_defs = odict.odict()
+        for input in self.state.get("inputs", self.default_inputs):
+            name = input.get( "name" )
+            label = input.get( "label", name )
+            parameter_type = input.get("parameter_type" )
+            optional = input.get("optional", False)
+            if parameter_type not in ["text", "boolean", "integer", "float", "color"]:
+                raise ValueError("Invalid parameter type for workflow parameters encountered.")
+            parameter_class = parameter_types[parameter_type]
+            parameter_kwds = {}
+            if parameter_type in ["integer", "float"]:
+                parameter_kwds["value"] = str(0)
+
+            # TODO: Use a dict-based description from YAML tool source
+            element = Element("param", name=name, label=label, type=parameter_type, optional=str(optional), **parameter_kwds )
+            input_def = parameter_class( None, element )
+            input_defs[name] = input_def
+        input_defs
+
+    def get_runtime_state( self ):
+        state = galaxy.tools.DefaultToolState()
+
+        state.inputs = odict.odict( )
+        for input in self.state.get("inputs", self.default_inputs):
+            name = input.get( "name" )
+            state.inputs[name] = None
+
+        return state
+
+    def get_runtime_input_dicts( self, step_annotation ):
+        return [ dict( description=step_annotation ) ]
+
+    def get_data_inputs( self ):
+        return []
+
+    def execute( self, trans, progress, invocation, step ):
+        job, step_outputs = None, dict( output=step.state.inputs['input'])
+        progress.set_outputs_for_input( step, step_outputs )
+        return job
+
+
 class PauseModule( SimpleWorkflowModule ):
     """ Initially this module will unconditionally pause a workflow - will aim
     to allow conditional pausing later on.
@@ -731,7 +802,7 @@ class ToolModule( WorkflowModule ):
 
     type = "tool"
 
-    def __init__( self, trans, tool_id, tool_version=None ):
+    def __init__( self, trans, tool_id, tool_version=None, tool_hash=None ):
         self.trans = trans
         self.tool_id = tool_id
         self.tool = trans.app.toolbox.get_tool( tool_id, tool_version=tool_version )
@@ -764,7 +835,8 @@ class ToolModule( WorkflowModule ):
         if tool_id is None:
             raise exceptions.RequestParameterInvalidException("No content id could be located for for step [%s]" % d)
         tool_version = str( d.get( 'tool_version', None ) )
-        module = Class( trans, tool_id, tool_version=tool_version )
+        tool_hash = str( d.get( 'tool_hash', None ) )
+        module = Class( trans, tool_id, tool_version=tool_version, tool_hash=tool_hash )
         module.state = DefaultToolState()
         module.label = d.get("label", None) or None
         if module.tool is not None:
@@ -799,7 +871,8 @@ class ToolModule( WorkflowModule ):
                 # tool being previously unavailable.
                 return module_factory.from_dict(trans, loads(step.config))
             tool_version = step.tool_version
-            module = Class( trans, tool_id, tool_version=tool_version )
+            tool_hash = step.tool_hash
+            module = Class( trans, tool_id, tool_version=tool_version, tool_hash=tool_hash )
             message = ""
             if step.tool_id != module.tool_id:  # This means the exact version of the tool is not installed. We inform the user.
                 old_tool_shed = step.tool_id.split( "/repos/" )[0]
@@ -856,9 +929,11 @@ class ToolModule( WorkflowModule ):
         step.tool_id = self.tool_id
         if self.tool:
             step.tool_version = self.get_tool_version()
+            step.tool_hash = self.tool.tool_hash
             step.tool_inputs = self.tool.params_to_strings( self.state.inputs, self.trans.app )
         else:
             step.tool_version = None
+            step.tool_hash = None
             step.tool_inputs = None
         step.tool_errors = self.errors
         for k, v in self.post_job_actions.iteritems():
@@ -1066,14 +1141,18 @@ class ToolModule( WorkflowModule ):
                 raise exceptions.MessageException( message )
             param_combinations.append( execution_state.inputs )
 
-        execution_tracker = execute(
-            trans=self.trans,
-            tool=tool,
-            param_combinations=param_combinations,
-            history=invocation.history,
-            collection_info=collection_info,
-            workflow_invocation_uuid=invocation.uuid.hex
-        )
+        try:
+            execution_tracker = execute(
+                trans=self.trans,
+                tool=tool,
+                param_combinations=param_combinations,
+                history=invocation.history,
+                collection_info=collection_info,
+                workflow_invocation_uuid=invocation.uuid.hex
+            )
+        except ToolInputsNotReadyException:
+            raise DelayedWorkflowEvaluation()
+
         if collection_info:
             step_outputs = dict( execution_tracker.implicit_collections )
         else:

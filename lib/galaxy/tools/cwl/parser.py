@@ -16,7 +16,6 @@ from galaxy.util.odict import odict
 
 from .cwltool_deps import (
     ensure_cwltool_available,
-    main,
     workflow,
 )
 
@@ -93,8 +92,7 @@ def to_cwl_tool_object(tool_path):
 
 def to_cwl_workflow_object(workflow_path):
     proxy_class = WorkflowProxy
-    make_tool = workflow.defaultMakeTool
-    cwl_workflow = main.load_tool(workflow_path, False, False, make_tool, False)
+    cwl_workflow = schema_loader.tool(path=workflow_path)
     raw_workflow = cwl_workflow.tool
     check_requirements(raw_workflow, tool=False)
 
@@ -237,8 +235,8 @@ class JobProxy(object):
         if self._cwl_job is None:
             self._cwl_job = self._tool_proxy._tool.job(
                 self._input_dict,
-                self._job_directory,
                 self._output_callback,
+                basedir=self._job_directory,
                 use_container=False
             ).next()
             self._is_command_line_job = hasattr(self._cwl_job, "command_line")

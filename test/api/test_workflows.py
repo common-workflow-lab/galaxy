@@ -1,6 +1,6 @@
 import time
 import yaml
-from json import dumps
+from json import dumps, loads
 from collections import namedtuple
 from uuid import uuid4
 
@@ -95,8 +95,24 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
         self._assert_status_code_is( upload_response, 200 )
         return upload_response.json()
 
-    def _upload_yaml_workflow(self, has_yaml, **kwds):
-        workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
+    def import_tool(self, tool):
+        """ Import a workflow via POST /api/workflows or
+        comparable interface into Galaxy.
+        """
+        upload_response = self._import_tool_response(tool)
+        self._assert_status_code_is( upload_response, 200 )
+        return upload_response.json()
+
+    def _import_tool_response(self, tool):
+        tool_str = dumps(tool, indent=4)
+        data = {
+            'representation': tool_str
+        }
+        upload_response = self._post( "dynamic_tools", data=data, admin=True )
+        return upload_response
+
+    def _upload_yaml_workflow(self, has_yaml, source_type=None, **kwds):
+        workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, source_type=source_type, **kwds)
         return workflow[ "id" ]
 
     def _setup_workflow_run( self, workflow, inputs_by='step_id', history_id=None ):
@@ -436,6 +452,46 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
             other_import_response = self.__import_workflow( workflow_id )
             self._assert_status_code_is( other_import_response, 200 )
             self._assert_user_has_workflow_with_name( "imported: test_import_published_deprecated (imported from API)")
+
+    def test_import_export_dynamic( self ):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  - type: input
+    label: input1
+  - tool_id: cat1
+    label: first_cat
+    state:
+      input1:
+        $link: 0
+  - label: embed1
+    run:
+      class: GalaxyTool
+      command: echo 'hello world 2' > $output1
+      outputs:
+        output1:
+          format: txt
+  - tool_id: cat1
+    state:
+      input1:
+        $link: first_cat#out_file1
+      queries:
+        input2:
+          $link: embed1#output1
+test_data:
+  input1: "hello world"
+""")
+        downloaded_workflow = self._download_workflow(workflow_id)
+        downloaded_tool_step = downloaded_workflow["steps"]["1"]
+        tool_representation = downloaded_tool_step["tool_representation"]
+        import_response = self._import_tool_response(loads(tool_representation))
+        self._assert_status_code_is(import_response, 303)
+
+        response = self.workflow_populator.create_workflow_response( downloaded_workflow )
+
+        downloaded_second_workflow = self._download_workflow(response.json()["id"])
+        print downloaded_second_workflow
+        assert False
 
     def test_import_annotations( self ):
         workflow_id = self.workflow_populator.simple_workflow( "test_import_annotations", publish=True )
@@ -810,6 +866,49 @@ test_data:
         content = self.dataset_populator.get_history_dataset_content( history_id )
         self.assertEquals("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\nchr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
 
+    @skip_without_tool( "cat1" )
+    @skip_without_tool( "collection_paired_test" )
+    def test_workflow_run_zip_collections( self ):
+        # A more advanced output collection workflow, testing regression of
+        # https://github.com/galaxyproject/galaxy/issues/776
+        history_id = self.dataset_populator.new_history()
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  - label: test_input_1
+    type: input
+  - label: test_input_2
+    type: input
+  - label: first_cat
+    tool_id: cat1
+    state:
+      input1:
+        $link: test_input_1
+  - label: zip_it
+    tool_id: "__ZIP_COLLECTION__"
+    state:
+      input_forward:
+        $link: first_cat#out_file1
+      input_reverse:
+        $link: test_input_2
+  - label: concat_pair
+    tool_id: collection_paired_test
+    state:
+      f1:
+        $link: zip_it#output
+""")
+        hda1 = self.dataset_populator.new_dataset( history_id, content="samp1\t10.0\nsamp2\t20.0\n" )
+        hda2 = self.dataset_populator.new_dataset( history_id, content="samp1\t20.0\nsamp2\t40.0\n" )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        inputs = {
+            '0': self._ds_entry(hda1),
+            '1': self._ds_entry(hda2),
+        }
+        invocation_id = self.__invoke_workflow( history_id, workflow_id, inputs )
+        self.wait_for_invocation_and_jobs( history_id, workflow_id, invocation_id )
+        content = self.dataset_populator.get_history_dataset_content( history_id )
+        self.assertEquals(content.strip(), "samp1\t10.0\nsamp2\t20.0\nsamp1\t20.0\nsamp2\t40.0")
+
     def test_workflow_request( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_queue" )
         workflow_request, history_id = self._setup_workflow_run( workflow )
@@ -1023,7 +1122,7 @@ test_data:
     type: raw
 """, history_id=history_id, wait=True, assert_ok=False )
 
-    def test_run_with_text_connection( self ):
+    def test_run_with_text_input_connection( self ):
         history_id = self.dataset_populator.new_history()
         self._run_jobs("""
 class: GalaxyWorkflow
@@ -1055,6 +1154,27 @@ test_data:
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         content = self.dataset_populator.get_history_dataset_content( history_id )
         self.assertEquals("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
+
+    def test_run_with_numeric_input_connection( self ):
+        history_id = self.dataset_populator.new_history()
+        self._run_jobs("""
+class: GalaxyWorkflow
+steps:
+- label: forty_two
+  tool_id: expression_forty_two
+  state: {}
+- label: consume_expression_parameter
+  tool_id: cheetah_casting
+  state:
+    floattest: 3.14
+    inttest:
+      $link: forty_two#out1
+test_data: {}
+""", history_id=history_id)
+
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        content = self.dataset_populator.get_history_dataset_content( history_id )
+        self.assertEquals("43\n4.14\n", content)
 
     def wait_for_invocation_and_jobs( self, history_id, workflow_id, invocation_id, assert_ok=True ):
         self.workflow_populator.wait_for_invocation( workflow_id, invocation_id )

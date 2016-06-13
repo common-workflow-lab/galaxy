@@ -3,8 +3,15 @@
 from .interface import ToolSource
 from .factory import get_tool_source
 from .factory import get_input_source
+from .factory import get_tool_source_from_representation
 from .output_objects import (
     ToolOutputCollectionPart,
 )
 
-__all__ = ["ToolSource", "get_tool_source", "get_input_source", "ToolOutputCollectionPart"]
+__all__ = [
+    "ToolSource",
+    "get_tool_source",
+    "get_input_source",
+    "get_tool_source_from_representation",
+    "ToolOutputCollectionPart",
+]

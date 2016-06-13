@@ -318,6 +318,25 @@ class PasswordResetToken( object ):
         self.expiration_time = galaxy.model.orm.now.now() + timedelta(hours=24)
 
 
+class DynamicTool( object, Dictifiable ):
+    dict_collection_visible_keys = ( 'id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden', 'tool_hash' )
+    dict_element_visible_keys = ( 'id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden', 'tool_hash' )
+
+    def __init__(self, tool_format=None, tool_id=None, tool_version=None, tool_hash=None,
+                 uuid=None, active=True, hidden=True, value=None):
+        self.tool_format = tool_format
+        self.tool_id = tool_id
+        self.tool_version = tool_version
+        self.tool_hash = tool_hash
+        self.active = active
+        self.hidden = hidden
+        self.value = value
+        if uuid is None:
+            self.uuid = uuid4()
+        else:
+            self.uuid = UUID(str(uuid))
+
+
 class BaseJobMetric( object ):
 
     def __init__( self, plugin, metric_name, metric_value ):
@@ -383,6 +402,7 @@ class Job( object, JobLike, Dictifiable ):
         self.user_id = None
         self.tool_id = None
         self.tool_version = None
+        self.tool_hash = None
         self.command_line = None
         self.param_filename = None
         self.parameters = []
@@ -659,6 +679,8 @@ class Job( object, JobLike, Dictifiable ):
             # System level details that only admins should have.
             rval['external_id'] = self.job_runner_external_id
             rval['command_line'] = self.command_line
+            rval['cwl_command_state'] = self.cwl_command_state
+            rval['cwl_command_state_version'] = self.cwl_command_state_version
 
         if view == 'element':
             param_dict = dict( [ ( p.name, p.value ) for p in self.parameters ] )
@@ -2126,6 +2148,10 @@ class DatasetInstance( object ):
         return True
 
     @property
+    def is_ok(self):
+        return self.state == self.states.OK
+
+    @property
     def is_pending( self ):
         """
         Return true if the dataset is neither ready nor in error
@@ -3185,6 +3211,14 @@ class DatasetCollectionInstance( object, HasName ):
     def state( self ):
         return self.collection.state
 
+    @property
+    def populated( self ):
+        return self.collection.populated
+
+    @property
+    def dataset_instances( self ):
+        return self.collection.dataset_instances
+
     def display_name( self ):
         return self.get_display_name()
 
@@ -3193,7 +3227,7 @@ class DatasetCollectionInstance( object, HasName ):
             id=self.id,
             name=self.name,
             collection_type=self.collection.collection_type,
-            populated=self.collection.populated,
+            populated=self.populated,
             populated_state=self.collection.populated_state,
             populated_state_message=self.collection.populated_state_message,
             type="collection",  # contents type (distinguished from file or folder (in case of library))

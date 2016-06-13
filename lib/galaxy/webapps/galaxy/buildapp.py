@@ -259,6 +259,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.connect( '/api/tools/{id:.+?}/download', action='download', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}', action='show', controller="tools" )
     webapp.mapper.resource( 'tool', 'tools', path_prefix='/api' )
+    webapp.mapper.resource( 'dynamic_tools', 'dynamic_tools', path_prefix='/api' )
 
     webapp.mapper.connect( '/api/dependency_resolvers/dependency', action="manager_dependency", controller="tool_dependencies" )
     webapp.mapper.connect( '/api/dependency_resolvers/requirements', action="manager_requirements", controller="tool_dependencies" )

@@ -521,6 +521,9 @@ var ToolLinkView = BaseView.extend({
         var $link = $('<div/>');
         $link.append(templates.tool_link(this.model.toJSON()));
 
+        var modelClass = this.model.get( 'model_class' );
+        var regularToolForm = modelClass === 'Tool' || modelClass === 'CwlTool';
+
         // open upload dialog for upload tool
         if (this.model.id === 'upload1') {
             $link.find('a').on('click', function(e) {
@@ -528,7 +531,7 @@ var ToolLinkView = BaseView.extend({
                 Galaxy.upload.show();
             });
         }
-        else if ( this.model.get( 'model_class' ) === 'Tool' ) { // regular tools
+        else if ( regularToolForm ) { // regular tools
             var self = this;
             $link.find('a').on('click', function(e) {
                 e.preventDefault();

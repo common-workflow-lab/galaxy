@@ -1,3 +1,5 @@
+import os
+
 from galaxy.tools.parameters.basic import (
     DataToolParameter,
     DataCollectionToolParameter,
@@ -6,6 +8,7 @@ from galaxy.tools.parameters.basic import (
 from galaxy.tools.wrappers import (
     InputValueWrapper,
     SelectToolParameterWrapper,
+    FilenameWrapper,
     DatasetFilenameWrapper,
     DatasetListWrapper,
     DatasetCollectionWrapper
@@ -52,10 +55,9 @@ class WrappedParameters( object ):
                 current = values[ "__current_case__" ]
                 self.wrap_values( input.cases[current].inputs, values, skip_missing_values=skip_missing_values )
             elif isinstance( input, Section ):
-                values = input_values[ input.name ]
+                values = value
                 self.wrap_values( input.inputs, values, skip_missing_values=skip_missing_values )
             elif isinstance( input, DataToolParameter ) and input.multiple:
-                value = input_values[ input.name ]
                 dataset_instances = DatasetListWrapper.to_dataset_instances( value )
                 input_values[ input.name ] = \
                     DatasetListWrapper( None,
@@ -63,9 +65,12 @@ class WrappedParameters( object ):
                                         datatypes_registry=trans.app.datatypes_registry,
                                         tool=tool,
                                         name=input.name )
-            elif isinstance( input, DataToolParameter ):
+            elif isinstance( input, DataToolParameter ) and input.default and value is None:
                 input_values[ input.name ] = \
-                    DatasetFilenameWrapper( input_values[ input.name ],
+                    FilenameWrapper( os.path.abspath( input.default ) )
+            elif isinstance( input, DataToolParameter ) and value:
+                input_values[ input.name ] = \
+                    DatasetFilenameWrapper( value,
                                             datatypes_registry=trans.app.datatypes_registry,
                                             tool=tool,
                                             name=input.name )
@@ -74,7 +79,7 @@ class WrappedParameters( object ):
             elif isinstance( input, DataCollectionToolParameter ):
                 input_values[ input.name ] = DatasetCollectionWrapper(
                     None,
-                    input_values[ input.name ],
+                    value,
                     datatypes_registry=trans.app.datatypes_registry,
                     tool=tool,
                     name=input.name,
