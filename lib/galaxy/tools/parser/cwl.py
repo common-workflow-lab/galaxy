@@ -25,6 +25,7 @@ class CwlToolSource(ToolSource):
         self._source_object = tool_object
         self._tool_proxy = None
         self._strict_cwl_validation = strict_cwl_validation
+        self._macro_paths = []
 
     @property
     def tool_proxy(self):
