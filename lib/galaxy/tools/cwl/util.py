@@ -385,3 +385,9 @@ def output_to_cwl_json(
         return rval
     else:
         raise NotImplementedError("Unknown history content type encountered")
+
+def download_output(galaxy_output, get_metadata, get_dataset, get_extra_files, output_path):
+    output_metadata = get_metadata(galaxy_output.history_content_type, galaxy_output.history_content_id)
+    dataset_dict = get_dataset(output_metadata)
+    with open(output_path, 'wb') as fh:
+        fh.write(dataset_dict['content'])
