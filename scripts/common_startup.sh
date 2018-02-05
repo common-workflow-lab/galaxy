@@ -66,7 +66,7 @@ done
 # Check client build state.
 if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     gitbranch=$(git rev-parse --abbrev-ref HEAD)
-    if [ $gitbranch == "dev" ]; then
+    if [ "$gitbranch" == "dev" ]; then
         # We're on dev.  This branch (only, currently) doesn't have build
         # artifacts.  We should probabably swap to a list of releases?
         # Compare hash.
