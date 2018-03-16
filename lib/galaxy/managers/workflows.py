@@ -368,6 +368,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     "representation": representation,
                 }, allow_load=True)
             as_dict = wf_proxy.to_dict()
+            log.info("wf_proxy.to_dict is %s" % as_dict)
 
         return RawWorkflowDescription(as_dict, workflow_path)
 

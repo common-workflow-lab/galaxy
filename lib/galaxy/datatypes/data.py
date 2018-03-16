@@ -363,6 +363,7 @@ class Data(metaclass=DataMeta):
         trans.response.headers['X-Content-Type-Options'] = 'nosniff'
         if isinstance(data, str):
             return smart_str(data)
+        log.info("FILENAME IS %s" % filename)
         if filename and filename != "index":
             # For files in extra_files_path
             extra_dir = data.dataset.extra_files_path_name

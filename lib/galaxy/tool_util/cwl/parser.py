@@ -785,6 +785,7 @@ class WorkflowProxy:
         for i, step_proxy in enumerate(step_proxies):
             input_connections = input_connections_by_step[i]
             steps[index] = step_proxy.to_dict(input_connections)
+            print("Adding label %s" % steps[index]["label"])
             index += 1
 
         return {

@@ -17,13 +17,16 @@ def attach_ordered_steps(workflow, steps):
     """ Attempt to topologically order steps and attach to workflow. If this
     fails - the workflow contains cycles so it mark it as such.
     """
+    log.info("unordered steps %s" % [s.label for s in steps])
     ordered_steps = order_workflow_steps(steps)
+    log.info("ordered steps %s" % [s.label for s in ordered_steps])
     workflow.has_cycles = True
     if ordered_steps:
         workflow.has_cycles = False
         workflow.steps = ordered_steps
     for i, step in enumerate(workflow.steps):
         step.order_index = i
+        log.info("i is %s" % i)
     return workflow.has_cycles
 
 

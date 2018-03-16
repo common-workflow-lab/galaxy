@@ -1595,6 +1595,10 @@ class JobWrapper(HasResourceParameters):
             'internals.galaxy.jobs.job_wrapper_finish',
             'job_wrapper.finish for job ${job_id} executed'
         )
+        log.info("tso %s" % tool_stdout)
+        log.info("tse %s" % tool_stderr)
+        log.info("jo %s" % job_stdout)
+        log.info("je %s" % job_stderr)
 
         # default post job setup
         self.sa_session.expunge_all()
