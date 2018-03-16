@@ -2809,6 +2809,7 @@ class CwlTool(Tool):
         cwl_job_proxy.save_job()
 
         param_dict["__cwl_command"] = command_line
+        log.info("__cwl_command is %s" % command_line)
         param_dict["__cwl_command_state"] = cwl_job_state
         param_dict["__cwl_command_version"] = 1
         log.info("CwlTool.exec_before_job() generated command_line %s" % command_line)

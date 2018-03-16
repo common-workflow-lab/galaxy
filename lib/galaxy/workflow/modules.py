@@ -1857,6 +1857,7 @@ class ToolModule(WorkflowModule):
                     elif replacement is not NO_REPLACEMENT:
                         replacement = {"src": "json", "value": replacement}
 
+                log.info("replacement for [%s] is [%s]" % (prefixed_name, replacement))
                 return replacement
 
             try:
