@@ -2389,19 +2389,19 @@ class ImportHistoryTool(Tool):
     tool_type = 'import_history'
 
 
-class CwlTool(Tool):
-    tool_type = 'cwl'
-    may_use_container_entry_point = True
+class CwlCommandBindingTool(Tool):
+    """Tools that use CWL to bind parameters to command-line descriptions."""
 
     def exec_before_job(self, app, inp_data, out_data, param_dict=None):
-        super(CwlTool, self).exec_before_job(app, inp_data, out_data, param_dict=param_dict)
+        super(CwlCommandBindingTool, self).exec_before_job(app, inp_data, out_data, param_dict=param_dict)
         # Working directory on Galaxy server (instead of remote compute).
         local_working_directory = param_dict["__local_working_directory__"]
         log.info("exec_before_job for CWL tool")
-        from galaxy.tools.cwl import to_cwl_job
-        input_json = to_cwl_job(self, param_dict, local_working_directory)
         if param_dict is None:
             raise Exception("Internal error - param_dict is empty.")
+
+        input_json = self.param_dict_to_cwl_inputs(param_dict, local_working_directory)
+
         output_dict = {}
         for name, dataset in out_data.items():
             output_dict[name] = {
@@ -2448,11 +2448,35 @@ class CwlTool(Tool):
         log.info("CwlTool.exec_before_job() generated command_line %s" % command_line)
 
     def parse(self, tool_source, **kwds):
-        super(CwlTool, self).parse(tool_source, **kwds)
+        super(CwlCommandBindingTool, self).parse(tool_source, **kwds)
         cwl_tool_proxy = getattr(tool_source, 'tool_proxy', None)
         if cwl_tool_proxy is None:
-            raise Exception("CwlTool.parse() called on tool source not defining a proxy object to underlying CWL tool.")
+            raise Exception("parse() called on tool source not defining a proxy object to underlying CWL tool.")
         self._cwl_tool_proxy = cwl_tool_proxy
+
+    def param_dict_to_cwl_inputs(self, param_dict, local_working_directory):
+        """Map Galaxy API inputs description to a CWL job json."""
+        raise NotImplementedError()
+
+
+class GalacticCwlTool(CwlCommandBindingTool):
+    """A CWL tool with a gx:Interface defined so Galaxy tool state can be used."""
+    tool_type = 'galactic_cwl'
+
+    def param_dict_to_cwl_inputs(self, param_dict, local_working_directory):
+        # TODO:
+        pass
+
+
+class CwlTool(CwlCommandBindingTool):
+    tool_type = 'cwl'
+    may_use_container_entry_point = True
+
+    def param_dict_to_cwl_inputs(self, param_dict, local_working_directory):
+        """Map Galaxy API inputs description to a CWL job json."""
+        from galaxy.tools.cwl import to_cwl_job
+        input_json = to_cwl_job(self, param_dict, local_working_directory)
+        return input_json
 
     def inputs_from_dict(self, as_dict):
         """Extra inputs from input dictionary (e.g. API payload).

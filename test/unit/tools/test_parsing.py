@@ -425,6 +425,15 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
         assert self._tool_source.parse_sanitize() is True
 
 
+class GalaxyFlavoredCwlLoaderTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(os.getcwd(), "test/functional/tools/cat.cwl")
+    source_contents = None
+
+    def test_parsing(self):
+        tool_type = self._tool_source.parse_tool_type()
+        assert tool_type == "galaxy_cwl", tool_type
+
+
 class DataSourceLoaderTestCase(BaseLoaderTestCase):
     source_file_name = "ds.xml"
     source_contents = """<?xml version="1.0"?>

@@ -40,6 +40,7 @@ class CwlToolSource(ToolSource):
         return self._tool_proxy
 
     def parse_tool_type(self):
+        print(self.tool_proxy._tool.tool)
         return 'cwl'
 
     def parse_id(self):
