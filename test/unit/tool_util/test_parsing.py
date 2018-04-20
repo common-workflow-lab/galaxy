@@ -534,6 +534,28 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
         assert self._tool_source.parse_sanitize() is True
 
 
+class GalaxyFlavoredCwlLoaderTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(os.getcwd(), "test/functional/tools/cwl_tools/galactic_flavored/record_input.cwl")
+    source_contents = None
+
+    def test_parsing(self):
+        tool_type = self._tool_source.parse_tool_type()
+        assert tool_type == "galactic_cwl", tool_type
+
+    def test_inputs_parsing(self):
+        input_pages = self._tool_source.parse_input_pages()
+        assert input_pages.inputs_defined
+        page_sources = input_pages.page_sources
+        assert len(page_sources) == 1
+        page_source = page_sources[0]
+        input_sources = page_source.parse_input_sources()
+        assert len(input_sources) == 1
+
+    def test_id(self):
+        tool_id = self._tool_source.parse_id()
+        assert tool_id == "galactic_record_input", tool_id
+
+
 class DataSourceLoaderTestCase(BaseLoaderTestCase):
     source_file_name = "ds.xml"
     source_contents = """<?xml version="1.0"?>
