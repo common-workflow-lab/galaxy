@@ -235,6 +235,8 @@
   -->
   <tool file="cwl_tools/v1.0/record-output.cwl" />
 
+  <tool file="cwl_tools/galactic_flavored/galactic_record_input.cwl" />
+  <tool file="cwl_tools/galactic_flavored/galactic_cat.cwl" />
 
   <!-- Tools interesting only for building up test workflows. -->
 
