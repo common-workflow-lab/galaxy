@@ -220,7 +220,7 @@ class UploadDataset(Group):
                 if dataset_name is None and composite_file.get("NAME", None) is not None:
                     dataset_name = composite_file.get("NAME")
                 if not composite_file.get('ftp_files', ''):
-                    filenames.append(composite_file.get('file_data', {}).get('filename', ''))
+                    filenames.append((composite_file.get('file_data') or {}).get('filename', ''))
                 else:
                     filenames.append(composite_file.get('ftp_files', [])[0])
             if dataset_name is None:
