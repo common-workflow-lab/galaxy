@@ -15,6 +15,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 from galaxy.tools.parser import get_tool_source
 
 from base.populators import (  # noqa: I100,I202
+    CWL_TOOL_DIRECTORY,
     CwlPopulator,
     GiDatasetPopulator,
     GiWorkflowPopulator,
@@ -54,6 +55,7 @@ def main(argv=None):
     arg_parser = argparse.ArgumentParser(description=DESCRIPTION)
     arg_parser.add_argument("--api_key", default="testmasterapikey")
     arg_parser.add_argument("--host", default="http://localhost:8080/")
+    arg_parser.add_argument('--cwl_version', default='v1.0', help='CWL version')
     arg_parser.add_argument('tool', metavar='TOOL', help='tool or workflow')
     arg_parser.add_argument('job', metavar='JOB', help='job')
 
@@ -63,8 +65,8 @@ def main(argv=None):
     dataset_populator = GiDatasetPopulator(gi)
     workflow_populator = GiWorkflowPopulator(gi)
     cwl_populator = CwlPopulator(dataset_populator, workflow_populator)
-    tool = os.path.abspath(args.tool)
-    job = os.path.abspath(args.job)
+    tool = os.path.join(CWL_TOOL_DIRECTORY, args.cwl_version, args.tool)
+    job = os.path.join(CWL_TOOL_DIRECTORY, args.cwl_version, args.job)
     run = cwl_populator.run_cwl_job(tool, job)
 
     tool_source = get_tool_source(tool)
