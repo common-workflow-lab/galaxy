@@ -407,9 +407,10 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         toolbox.
         """
         tool_id = payload.get("tool_id")
+        tool_hash = payload.get("tool_hash")
         if tool_id in PROTECTED_TOOLS:
             raise exceptions.RequestParameterInvalidException("Cannot execute tool [%s] directly, must use alternative endpoint." % tool_id)
-        if tool_id is None:
+        if tool_id is None and tool_hash is None:
             raise exceptions.RequestParameterInvalidException("Must specify a valid tool_id to use this endpoint.")
         return self._create(trans, payload, **kwd)
 
