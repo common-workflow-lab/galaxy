@@ -7,6 +7,128 @@ from .test_workflows_cwl import BaseCwlWorklfowTestCase
 class CwlConformanceTestCase(BaseCwlWorklfowTestCase):
     """Test case mapping to CWL conformance tests for version $version."""
 
+    def test_conformance_v1_0_nested_prefixes_arrays(self):
+        """Test nested prefixes with arrays
+
+        Generated from::
+
+            job: v1.0/bwa-mem-job.json
+            label: nested_prefixes_arrays
+            output:
+              args:
+              - bwa
+              - mem
+              - chr20.fa
+              - -XXX
+              - -YYY
+              - example_human_Illumina.pe_1.fastq
+              - -YYY
+              - example_human_Illumina.pe_2.fastq
+            tags:
+            - required
+            - command_line_tool
+            tool: v1.0/binding-test.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test nested prefixes with arrays""")
+
+    def test_conformance_v1_0_nested_cl_bindings(self):
+        """Test nested command line bindings
+
+        Generated from::
+
+            job: v1.0/tmap-job.json
+            label: nested_cl_bindings
+            output:
+              args:
+              - tmap
+              - mapall
+              - stage1
+              - map1
+              - --min-seq-length
+              - '20'
+              - map2
+              - --min-seq-length
+              - '20'
+              - stage2
+              - map1
+              - --max-seq-length
+              - '20'
+              - --min-seq-length
+              - '10'
+              - --seed-length
+              - '16'
+              - map2
+              - --max-seed-hits
+              - '-1'
+              - --max-seq-length
+              - '20'
+              - --min-seq-length
+              - '10'
+            tags:
+            - schema_def
+            - command_line_tool
+            tool: v1.0/tmap-tool.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test nested command line bindings""")
+
+    def test_conformance_v1_0_cl_optional_inputs_missing(self):
+        """Test command line with optional input (missing)
+
+        Generated from::
+
+            job: v1.0/cat-job.json
+            label: cl_optional_inputs_missing
+            output:
+              args:
+              - cat
+              - hello.txt
+            tags:
+            - required
+            - command_line_tool
+            tool: v1.0/cat1-testcli.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test command line with optional input (missing)""")
+
+    def test_conformance_v1_0_cl_optional_bindings_provided(self):
+        """Test command line with optional input (provided)
+
+        Generated from::
+
+            job: v1.0/cat-n-job.json
+            label: cl_optional_bindings_provided
+            output:
+              args:
+              - cat
+              - -n
+              - hello.txt
+            tags:
+            - required
+            - command_line_tool
+            tool: v1.0/cat1-testcli.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test command line with optional input (provided)""")
+
+    def test_conformance_v1_0_initworkdir_expreng_requirements(self):
+        """Test InitialWorkDirRequirement ExpressionEngineRequirement.engineConfig feature
+
+        Generated from::
+
+            job: v1.0/cat-job.json
+            label: initworkdir_expreng_requirements
+            output:
+              foo:
+                checksum: sha1$63da67422622fbf9251a046d7a34b7ea0fd4fead
+                class: File
+                location: foo.txt
+                size: 22
+            tags:
+            - initial_work_dir
+            - inline_javascript
+            - command_line_tool
+            tool: v1.0/template-tool.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test InitialWorkDirRequirement ExpressionEngineRequirement.engineConfig feature""")
+
     def test_conformance_v1_0_stdout_redirect_docker(self):
         """Test command execution in Docker with stdout redirection
 
@@ -67,6 +189,66 @@ class CwlConformanceTestCase(BaseCwlWorklfowTestCase):
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test command execution in Docker with mediumcut stdout redirection""")
 
+    def test_conformance_v1_0_stderr_redirect(self):
+        """Test command line with stderr redirection
+
+        Generated from::
+
+            job: v1.0/empty.json
+            label: stderr_redirect
+            output:
+              output_file:
+                checksum: sha1$f1d2d2f924e986ac86fdf7b36c94bcdf32beec15
+                class: File
+                location: error.txt
+                size: 4
+            tags:
+            - shell_command
+            - command_line_tool
+            tool: v1.0/stderr.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test command line with stderr redirection""")
+
+    def test_conformance_v1_0_stderr_redirect_shortcut(self):
+        """Test command line with stderr redirection, brief syntax
+
+        Generated from::
+
+            job: v1.0/empty.json
+            label: stderr_redirect_shortcut
+            output:
+              output_file:
+                checksum: sha1$f1d2d2f924e986ac86fdf7b36c94bcdf32beec15
+                class: File
+                location: Any
+                size: 4
+            tags:
+            - shell_command
+            - command_line_tool
+            tool: v1.0/stderr-shortcut.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test command line with stderr redirection, brief syntax""")
+
+    def test_conformance_v1_0_stderr_redirect_mediumcut(self):
+        """Test command line with stderr redirection, named brief syntax
+
+        Generated from::
+
+            job: v1.0/empty.json
+            label: stderr_redirect_mediumcut
+            output:
+              output_file:
+                checksum: sha1$f1d2d2f924e986ac86fdf7b36c94bcdf32beec15
+                class: File
+                location: std.err
+                size: 4
+            tags:
+            - shell_command
+            - command_line_tool
+            tool: v1.0/stderr-mediumcut.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test command line with stderr redirection, named brief syntax""")
+
     def test_conformance_v1_0_stdinout_redirect_docker(self):
         """Test command execution in Docker with stdin and stdout redirection
 
@@ -118,6 +300,68 @@ class CwlConformanceTestCase(BaseCwlWorklfowTestCase):
             tool: v1.0/null-expression1-tool.cwl
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test explicitly passing null to Any type inputs with default values.""")
+
+    def test_conformance_v1_0_expression_any_string(self):
+        """Testing the string 'null' does not trip up an Any with a default value.
+
+        Generated from::
+
+            job: v1.0/null-expression2-job.json
+            label: expression_any_string
+            output:
+              output: 2
+            tags:
+            - inline_javascript
+            - expression_tool
+            tool: v1.0/null-expression1-tool.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Testing the string 'null' does not trip up an Any with a default value.""")
+
+    def test_conformance_v1_0_expression_any_nodefaultany(self):
+        """Test Any without defaults cannot be unspecified.
+
+        Generated from::
+
+            job: v1.0/empty.json
+            label: expression_any_nodefaultany
+            should_fail: true
+            tags:
+            - inline_javascript
+            - expression_tool
+            tool: v1.0/null-expression2-tool.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test Any without defaults cannot be unspecified.""")
+
+    def test_conformance_v1_0_expression_any_null_nodefaultany(self):
+        """Test explicitly passing null to Any type without a default value.
+
+        Generated from::
+
+            job: v1.0/null-expression1-job.json
+            label: expression_any_null_nodefaultany
+            should_fail: true
+            tags:
+            - inline_javascript
+            - expression_tool
+            tool: v1.0/null-expression2-tool.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test explicitly passing null to Any type without a default value.""")
+
+    def test_conformance_v1_0_expression_any_nullstring_nodefaultany(self):
+        """Testing the string 'null' does not trip up an Any without a default value.
+
+        Generated from::
+
+            job: v1.0/null-expression2-job.json
+            label: expression_any_nullstring_nodefaultany
+            output:
+              output: 2
+            tags:
+            - inline_javascript
+            - expression_tool
+            tool: v1.0/null-expression2-tool.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Testing the string 'null' does not trip up an Any without a default value.""")
 
     def test_conformance_v1_0_stdinout_redirect(self):
         """Test command execution in with stdin and stdout redirection
@@ -171,6 +415,109 @@ class CwlConformanceTestCase(BaseCwlWorklfowTestCase):
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test outputEval to transform output""")
 
+    def test_conformance_v1_0_wf_wc_parseInt(self):
+        """Test two step workflow with imported tools
+
+        Generated from::
+
+            job: v1.0/wc-job.json
+            label: wf_wc_parseInt
+            output:
+              count_output: 16
+            tags:
+            - inline_javascript
+            - workflow
+            tool: v1.0/count-lines1-wf.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test two step workflow with imported tools""")
+
+    def test_conformance_v1_0_wf_wc_expressiontool(self):
+        """Test two step workflow with inline tools
+
+        Generated from::
+
+            job: v1.0/wc-job.json
+            label: wf_wc_expressiontool
+            output:
+              count_output: 16
+            tags:
+            - inline_javascript
+            - workflow
+            tool: v1.0/count-lines2-wf.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test two step workflow with inline tools""")
+
+    def test_conformance_v1_0_wf_wc_scatter(self):
+        """Test single step workflow with Scatter step
+
+        Generated from::
+
+            job: v1.0/count-lines3-job.json
+            label: wf_wc_scatter
+            output:
+              count_output:
+              - 16
+              - 1
+            tags:
+            - scatter
+            - inline_javascript
+            - workflow
+            tool: v1.0/count-lines3-wf.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test single step workflow with Scatter step""")
+
+    def test_conformance_v1_0_wf_wc_nomultiple(self):
+        """Test that no MultipleInputFeatureRequirement is necessary when
+workflow step source is a single-item list
+
+
+        Generated from::
+
+            job: v1.0/count-lines6-job.json
+            label: wf_wc_nomultiple
+            output:
+              count_output: 32
+            tags:
+            - inline_javascript
+            - workflow
+            tool: v1.0/count-lines13-wf.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test that no MultipleInputFeatureRequirement is necessary when
+workflow step source is a single-item list
+""")
+
+    def test_conformance_v1_0_wf_input_default_provided(self):
+        """Test workflow with default value for input parameter (provided)
+
+        Generated from::
+
+            job: v1.0/wc-job.json
+            label: wf_input_default_provided
+            output:
+              count_output: 16
+            tags:
+            - inline_javacscript
+            - workflow
+            tool: v1.0/count-lines5-wf.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test workflow with default value for input parameter (provided)""")
+
+    def test_conformance_v1_0_wf_default_tool_default(self):
+        """Test that workflow defaults override tool defaults
+
+        Generated from::
+
+            job: v1.0/empty.json
+            label: wf_default_tool_default
+            output:
+              default_output: workflow_default
+            tags:
+            - required
+            - workflow
+            tool: v1.0/echo-wf-default.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test that workflow defaults override tool defaults""")
+
     def test_conformance_v1_0_envvar_req(self):
         """Test EnvVarRequirement
 
@@ -190,6 +537,132 @@ class CwlConformanceTestCase(BaseCwlWorklfowTestCase):
             tool: v1.0/env-tool1.cwl
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test EnvVarRequirement""")
+
+    def test_conformance_v1_0_wf_scatter_emptylist(self):
+        """Test workflow scatter with single empty list parameter
+
+        Generated from::
+
+            job: v1.0/scatter-empty-job1.json
+            label: wf_scatter_emptylist
+            output:
+              out: []
+            tags:
+            - scatter
+            - workflow
+            tool: v1.0/scatter-wf1.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test workflow scatter with single empty list parameter""")
+
+    def test_conformance_v1_0_wf_scatter_dotproduct_twoempty(self):
+        """Test workflow scatter with two empty scatter parameters and dotproduct join method
+
+        Generated from::
+
+            job: v1.0/scatter-empty-job4.json
+            label: wf_scatter_dotproduct_twoempty
+            output:
+              out: []
+            tags:
+            - scatter
+            - workflow
+            tool: v1.0/scatter-wf4.cwl#main
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test workflow scatter with two empty scatter parameters and dotproduct join method""")
+
+    def test_conformance_v1_0_any_input_param(self):
+        """Test Any type input parameter
+
+        Generated from::
+
+            job: v1.0/env-job.json
+            label: any_input_param
+            output:
+              out: 'hello test env
+            
+                '
+            tags:
+            - required
+            - command_line_tool
+            tool: v1.0/echo-tool.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test Any type input parameter""")
+
+    def test_conformance_v1_0_nested_workflow(self):
+        """Test nested workflow
+
+        Generated from::
+
+            job: v1.0/wc-job.json
+            label: nested_workflow
+            output:
+              count_output: 16
+            tags:
+            - subworkflow
+            - workflow
+            tool: v1.0/count-lines8-wf.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test nested workflow""")
+
+    def test_conformance_v1_0_requirement_priority(self):
+        """Test requirement priority
+
+        Generated from::
+
+            job: v1.0/env-job.json
+            label: requirement_priority
+            output:
+              out:
+                checksum: sha1$b3ec4ed1749c207e52b3a6d08c59f31d83bff519
+                class: File
+                location: out
+                size: 15
+            tags:
+            - env_var
+            - workflow
+            tool: v1.0/env-wf1.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test requirement priority""")
+
+    def test_conformance_v1_0_requirement_override_hints(self):
+        """Test requirements override hints
+
+        Generated from::
+
+            job: v1.0/env-job.json
+            label: requirement_override_hints
+            output:
+              out:
+                checksum: sha1$cdc1e84968261d6a7575b5305945471f8be199b6
+                class: File
+                location: out
+                size: 9
+            tags:
+            - env_var
+            - workflow
+            tool: v1.0/env-wf2.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test requirements override hints""")
+
+    def test_conformance_v1_0_requirement_workflow_steps(self):
+        """Test requirements on workflow steps
+
+        Generated from::
+
+            job: v1.0/env-job.json
+            label: requirement_workflow_steps
+            output:
+              out:
+                checksum: sha1$cdc1e84968261d6a7575b5305945471f8be199b6
+                class: File
+                location: out
+                size: 9
+            tags:
+            - env_var
+            - workflow
+            tool: v1.0/env-wf3.cwl
+        """
+        self.cwl_populator.run_conformance_test("""v1.0""", """Test requirements on workflow steps""")
 
     def test_conformance_v1_0_rename(self):
         """Test InitialWorkDirRequirement with expression in filename.
@@ -576,21 +1049,4 @@ and just 'location' is provided.
             tool: v1.0/writable-dir-docker.cwl
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test empty writable dir with InitialWorkDirRequirement inside Docker""")
-
-    def test_conformance_v1_0_170(self):
-        """Test use of size in expressions for an empty file
-
-        Generated from::
-
-            job: v1.0/job-input-array-one-empty-file.json
-            output:
-              output_file:
-                basename: output.txt
-                checksum: sha1$dad5a8472b87f6c5ef87d8fc6ef1458defc57250
-                class: File
-                location: Any
-                size: 11
-            tool: v1.0/size-expression-tool.cwl
-        """
-        self.cwl_populator.run_conformance_test("""v1.0""", """Test use of size in expressions for an empty file""")
 

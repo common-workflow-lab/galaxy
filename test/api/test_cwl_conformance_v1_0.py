@@ -2894,12 +2894,13 @@ inputs are not present in the input object used to run the tool.
 inputs are not present in the input object used to run the tool.
 """)
 
-    def test_conformance_v1_0_134(self):
+    def test_conformance_v1_0_wf_scatter_embedded_subwf(self):
         """Test simple scatter over an embedded subworkflow
 
         Generated from::
 
             job: v1.0/count-lines3-job.json
+            label: wf_scatter_embedded_subwf
             output:
               count_output:
               - 16
@@ -2908,12 +2909,13 @@ inputs are not present in the input object used to run the tool.
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test simple scatter over an embedded subworkflow""")
 
-    def test_conformance_v1_0_135(self):
+    def test_conformance_v1_0_wf_multiple_param_embedded_subwf(self):
         """Test simple multiple input scatter over an embedded subworkflow
 
         Generated from::
 
             job: v1.0/count-lines4-job.json
+            label: wf_multiple_param_embedded_subwf
             output:
               count_output:
               - 16
@@ -2922,48 +2924,52 @@ inputs are not present in the input object used to run the tool.
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test simple multiple input scatter over an embedded subworkflow""")
 
-    def test_conformance_v1_0_136(self):
+    def test_conformance_v1_0_wf_double_nested_subwf(self):
         """Test twice nested subworkflow
 
         Generated from::
 
             job: v1.0/wc-job.json
+            label: wf_double_nested_subwf
             output:
               count_output: 16
             tool: v1.0/count-lines15-wf.cwl
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test twice nested subworkflow""")
 
-    def test_conformance_v1_0_137(self):
+    def test_conformance_v1_0_wf_subwf_tool_then_wf(self):
         """Test subworkflow of mixed depth with tool first
 
         Generated from::
 
             job: v1.0/wc-job.json
+            label: wf_subwf_tool_then_wf
             output:
               count_output: 16
             tool: v1.0/count-lines16-wf.cwl
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test subworkflow of mixed depth with tool first""")
 
-    def test_conformance_v1_0_138(self):
+    def test_conformance_v1_0_wf_subwf_wf_then_tool(self):
         """Test subworkflow of mixed depth with tool after
 
         Generated from::
 
             job: v1.0/wc-job.json
+            label: wf_subwf_wf_then_tool
             output:
               count_output: 16
             tool: v1.0/count-lines17-wf.cwl
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test subworkflow of mixed depth with tool after""")
 
-    def test_conformance_v1_0_139(self):
+    def test_conformance_v1_0_wf_output_record(self):
         """Test record type inputs to and outputs from workflows.
 
         Generated from::
 
             job: v1.0/record-output-job.json
+            label: wf_output_record
             output:
               orec:
                 obar:
@@ -2980,84 +2986,91 @@ inputs are not present in the input object used to run the tool.
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test record type inputs to and outputs from workflows.""")
 
-    def test_conformance_v1_0_140(self):
+    def test_conformance_v1_0_wf_input_output_int(self):
         """Test integer workflow input and outputs
 
         Generated from::
 
             job: v1.0/io-int.json
+            label: wf_input_output_int
             output:
               o: 10
             tool: v1.0/io-int-wf.cwl
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test integer workflow input and outputs""")
 
-    def test_conformance_v1_0_141(self):
+    def test_conformance_v1_0_wf_input_int_opt_spec(self):
         """Test optional integer workflow inputs (specified)
 
         Generated from::
 
             job: v1.0/io-int.json
+            label: wf_input_int_opt_spec
             output:
               o: 10
             tool: v1.0/io-int-optional-wf.cwl
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test optional integer workflow inputs (specified)""")
 
-    def test_conformance_v1_0_142(self):
+    def test_conformance_v1_0_wf_input_int_opt_unspec(self):
         """Test optional integer workflow inputs (unspecified)
 
         Generated from::
 
             job: v1.0/empty.json
+            label: wf_input_int_opt_unspec
             output:
               o: 4
             tool: v1.0/io-int-optional-wf.cwl
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test optional integer workflow inputs (unspecified)""")
 
-    def test_conformance_v1_0_143(self):
+    def test_conformance_v1_0_wf_input_int_default_spec(self):
         """Test default integer workflow inputs (specified)
 
         Generated from::
 
             job: v1.0/io-int.json
+            label: wf_input_int_default_spec
             output:
               o: 10
             tool: v1.0/io-int-default-wf.cwl
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test default integer workflow inputs (specified)""")
 
-    def test_conformance_v1_0_144(self):
+    def test_conformance_v1_0_wf_input_int_default_unspec(self):
         """Test default integer workflow inputs (unspecified)
 
         Generated from::
 
             job: v1.0/empty.json
+            label: wf_input_int_default_unspec
             output:
               o: 8
             tool: v1.0/io-int-default-wf.cwl
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test default integer workflow inputs (unspecified)""")
 
-    def test_conformance_v1_0_145(self):
+    def test_conformance_v1_0_wf_input_int_default_tool_wf_unspec(self):
         """Test default integer tool and workflow inputs (unspecified)
 
         Generated from::
 
             job: v1.0/empty.json
+            label: wf_input_int_default_tool_wf_unspec
             output:
               o: 13
             tool: v1.0/io-int-default-tool-and-wf.cwl
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test default integer tool and workflow inputs (unspecified)""")
 
-    def test_conformance_v1_0_146(self):
+    def test_conformance_v1_0_wf_input_file_default_unspec(self):
         """Test File input with default unspecified to workflow
 
         Generated from::
 
             job: v1.0/empty.json
+            label: wf_input_file_default_unspec
             output:
               o:
                 basename: output
@@ -3069,12 +3082,13 @@ inputs are not present in the input object used to run the tool.
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test File input with default unspecified to workflow""")
 
-    def test_conformance_v1_0_147(self):
+    def test_conformance_v1_0_wf_input_file_default_spec(self):
         """Test File input with default specified to workflow
 
         Generated from::
 
             job: v1.0/default_path_job.yml
+            label: wf_input_file_default_spec
             output:
               o:
                 basename: output
@@ -3086,12 +3100,13 @@ inputs are not present in the input object used to run the tool.
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test File input with default specified to workflow""")
 
-    def test_conformance_v1_0_148(self):
+    def test_conformance_v1_0_wf_input_union_file_filearray_onefilearray(self):
         """Test input union type or File or File array to a tool with one file in array specified.
 
         Generated from::
 
             job: v1.0/job-input-array-one-empty-file.json
+            label: wf_input_union_file_filearray_onefilearray
             output:
               output_file:
                 basename: output.txt
@@ -3103,12 +3118,13 @@ inputs are not present in the input object used to run the tool.
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test input union type or File or File array to a tool with one file in array specified.""")
 
-    def test_conformance_v1_0_149(self):
+    def test_conformance_v1_0_wf_input_union_file_filearray_fewfilesarray(self):
         """Test input union type or File or File array to a tool with a few files in array specified.
 
         Generated from::
 
             job: v1.0/job-input-array-few-files.json
+            label: wf_input_union_file_filearray_fewfilesarray
             output:
               output_file:
                 basename: output.txt
@@ -3120,12 +3136,13 @@ inputs are not present in the input object used to run the tool.
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test input union type or File or File array to a tool with a few files in array specified.""")
 
-    def test_conformance_v1_0_150(self):
+    def test_conformance_v1_0_wf_input_union_file_filearray_onefile(self):
         """Test input union type or File or File array to a tool with one file specified.
 
         Generated from::
 
             job: v1.0/job-input-one-file.json
+            label: wf_input_union_file_filearray_onefile
             output:
               output_file:
                 basename: output.txt
@@ -3137,12 +3154,13 @@ inputs are not present in the input object used to run the tool.
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test input union type or File or File array to a tool with one file specified.""")
 
-    def test_conformance_v1_0_151(self):
+    def test_conformance_v1_0_wf_input_union_file_filearray_null(self):
         """Test input union type or File or File array to a tool with null specified.
 
         Generated from::
 
             job: v1.0/job-input-null.json
+            label: wf_input_union_file_filearray_null
             output:
               output_file:
                 basename: output.txt
@@ -3154,48 +3172,52 @@ inputs are not present in the input object used to run the tool.
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test input union type or File or File array to a tool with null specified.""")
 
-    def test_conformance_v1_0_152(self):
+    def test_conformance_v1_0_wf_input_any_integer_tool(self):
         """Test Any parameter with integer input to a tool
 
         Generated from::
 
             job: v1.0/io-any-int.json
+            label: wf_input_any_integer_tool
             output:
               t1: 7
             tool: v1.0/io-any-1.cwl
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test Any parameter with integer input to a tool""")
 
-    def test_conformance_v1_0_153(self):
+    def test_conformance_v1_0_wf_input_any_string_tool(self):
         """Test Any parameter with string input to a tool
 
         Generated from::
 
             job: v1.0/io-any-string.json
+            label: wf_input_any_string_tool
             output:
               t1: '7'
             tool: v1.0/io-any-1.cwl
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test Any parameter with string input to a tool""")
 
-    def test_conformance_v1_0_154(self):
+    def test_conformance_v1_0_wf_input_any_file_tool(self):
         """Test Any parameter with file input to a tool
 
         Generated from::
 
             job: v1.0/io-any-file.json
+            label: wf_input_any_file_tool
             output:
               t1: File
             tool: v1.0/io-any-1.cwl
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test Any parameter with file input to a tool""")
 
-    def test_conformance_v1_0_155(self):
+    def test_conformance_v1_0_wf_input_any_array_tool(self):
         """Test Any parameter with array input to a tool
 
         Generated from::
 
             job: v1.0/io-any-array.json
+            label: wf_input_any_array_tool
             output:
               t1:
               - 1
@@ -3204,12 +3226,13 @@ inputs are not present in the input object used to run the tool.
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test Any parameter with array input to a tool""")
 
-    def test_conformance_v1_0_156(self):
+    def test_conformance_v1_0_wf_input_any_record_tool(self):
         """Test Any parameter with record input to a tool
 
         Generated from::
 
             job: v1.0/io-any-record.json
+            label: wf_input_any_record_tool
             output:
               t1:
                 cow: 5
@@ -3218,48 +3241,52 @@ inputs are not present in the input object used to run the tool.
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test Any parameter with record input to a tool""")
 
-    def test_conformance_v1_0_157(self):
+    def test_conformance_v1_0_wf_input_any_integer_wf(self):
         """Test Any parameter with integer input to a workflow
 
         Generated from::
 
             job: v1.0/io-any-int.json
+            label: wf_input_any_integer_wf
             output:
               t1: 7
             tool: v1.0/io-any-wf-1.cwl
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test Any parameter with integer input to a workflow""")
 
-    def test_conformance_v1_0_158(self):
+    def test_conformance_v1_0_wf_input_any_string_wf(self):
         """Test Any parameter with string input to a workflow
 
         Generated from::
 
             job: v1.0/io-any-string.json
+            label: wf_input_any_string_wf
             output:
               t1: '7'
             tool: v1.0/io-any-wf-1.cwl
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test Any parameter with string input to a workflow""")
 
-    def test_conformance_v1_0_159(self):
+    def test_conformance_v1_0_wf_input_any_file_wf(self):
         """Test Any parameter with file input to a workflow
 
         Generated from::
 
             job: v1.0/io-any-file.json
+            label: wf_input_any_file_wf
             output:
               t1: File
             tool: v1.0/io-any-wf-1.cwl
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test Any parameter with file input to a workflow""")
 
-    def test_conformance_v1_0_160(self):
+    def test_conformance_v1_0_wf_input_any_array_wf(self):
         """Test Any parameter with array input to a workflow
 
         Generated from::
 
             job: v1.0/io-any-array.json
+            label: wf_input_any_array_wf
             output:
               t1:
               - 1
@@ -3268,12 +3295,13 @@ inputs are not present in the input object used to run the tool.
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test Any parameter with array input to a workflow""")
 
-    def test_conformance_v1_0_161(self):
+    def test_conformance_v1_0_wf_input_any_record_wf(self):
         """Test Any parameter with record input to a tool
 
         Generated from::
 
             job: v1.0/io-any-record.json
+            label: wf_input_any_record_wf
             output:
               t1:
                 cow: 5
@@ -3282,36 +3310,39 @@ inputs are not present in the input object used to run the tool.
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test Any parameter with record input to a tool""")
 
-    def test_conformance_v1_0_162(self):
+    def test_conformance_v1_0_wf_input_union_default_unspec(self):
         """Test union type input to workflow with default unspecified
 
         Generated from::
 
             job: v1.0/empty.json
+            label: wf_input_union_default_unspec
             output:
               o: the default value
             tool: v1.0/io-union-input-default-wf.cwl
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test union type input to workflow with default unspecified""")
 
-    def test_conformance_v1_0_163(self):
+    def test_conformance_v1_0_wf_input_union_default_file(self):
         """Test union type input to workflow with default specified as file
 
         Generated from::
 
             job: v1.0/io-any-file.json
+            label: wf_input_union_default_file
             output:
               o: File
             tool: v1.0/io-union-input-default-wf.cwl
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test union type input to workflow with default specified as file""")
 
-    def test_conformance_v1_0_164(self):
+    def test_conformance_v1_0_wf_step_valuefrom_literal(self):
         """Test valueFrom on workflow step from literal (string).
 
         Generated from::
 
             job: v1.0/empty.json
+            label: wf_step_valuefrom_literal
             output:
               val: 'moocow
             
@@ -3320,12 +3351,13 @@ inputs are not present in the input object used to run the tool.
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test valueFrom on workflow step from literal (string).""")
 
-    def test_conformance_v1_0_165(self):
+    def test_conformance_v1_0_wf_step_valuefrom_basename(self):
         """Test valueFrom on workflow step using basename.
 
         Generated from::
 
             job: v1.0/wc-job.json
+            label: wf_step_valuefrom_basename
             output:
               val1: 'whale.txt
             
@@ -3337,12 +3369,13 @@ inputs are not present in the input object used to run the tool.
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test valueFrom on workflow step using basename.""")
 
-    def test_conformance_v1_0_166(self):
+    def test_conformance_v1_0_tool_output_arrays_ints(self):
         """Test output arrays in a tool (with ints).
 
         Generated from::
 
             job: v1.0/output-arrays-int-job.json
+            label: tool_output_arrays_ints
             output:
               o:
               - 0
@@ -3352,24 +3385,26 @@ inputs are not present in the input object used to run the tool.
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test output arrays in a tool (with ints).""")
 
-    def test_conformance_v1_0_167(self):
+    def test_conformance_v1_0_wf_output_arrays_ints(self):
         """Test output arrays in a workflow (with ints).
 
         Generated from::
 
             job: v1.0/output-arrays-int-job.json
+            label: wf_output_arrays_ints
             output:
               o: 12
             tool: v1.0/output-arrays-int-wf.cwl
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test output arrays in a workflow (with ints).""")
 
-    def test_conformance_v1_0_168(self):
+    def test_conformance_v1_0_wf_output_arrays_files(self):
         """Test output arrays in a workflow (with Files).
 
         Generated from::
 
             job: v1.0/output-arrays-file-job.json
+            label: wf_output_arrays_files
             output:
               o:
               - basename: moo
@@ -3386,12 +3421,13 @@ inputs are not present in the input object used to run the tool.
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test output arrays in a workflow (with Files).""")
 
-    def test_conformance_v1_0_169(self):
+    def test_conformance_v1_0_tool_docker_entrypoint(self):
         """Test Docker ENTRYPOINT usage
 
         Generated from::
 
             job: v1.0/empty.json
+            label: tool_docker_entrypoint
             output:
               cow:
                 basename: cow
@@ -3403,12 +3439,13 @@ inputs are not present in the input object used to run the tool.
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test Docker ENTRYPOINT usage""")
 
-    def test_conformance_v1_0_170(self):
+    def test_conformance_v1_0_tool_expressions_size_emptyfile(self):
         """Test use of size in expressions for an empty file
 
         Generated from::
 
             job: v1.0/job-input-array-one-empty-file.json
+            label: tool_expressions_size_emptyfile
             output:
               output_file:
                 basename: output.txt
@@ -3420,12 +3457,13 @@ inputs are not present in the input object used to run the tool.
         """
         self.cwl_populator.run_conformance_test("""v1.0""", """Test use of size in expressions for an empty file""")
 
-    def test_conformance_v1_0_171(self):
+    def test_conformance_v1_0_tool_expressions_size_fewfiles(self):
         """Test use of size in expressions for a few files
 
         Generated from::
 
             job: v1.0/job-input-array-few-files.json
+            label: tool_expressions_size_fewfiles
             output:
               output_file:
                 basename: output.txt
