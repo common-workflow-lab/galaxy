@@ -2436,7 +2436,7 @@ mapper(model.WorkflowStep, model.WorkflowStep.table, properties=dict(
         backref="workflow_steps"),
     annotations=relation(model.WorkflowStepAnnotationAssociation,
         order_by=model.WorkflowStepAnnotationAssociation.table.c.id,
-        backref="workflow_steps")
+        backref="workflow_steps"),
 ))
 
 mapper(model.WorkflowStepInput, model.WorkflowStepInput.table, properties=dict(
