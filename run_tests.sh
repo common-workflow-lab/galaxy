@@ -381,8 +381,8 @@ do
           fi
           ;;
       -a|-api|--api)
-          GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE="True"  # Run these tests with a non-trivial object store.
-          export GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE
+          # GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE="True"  # Run these tests with a non-trivial object store.
+          # export GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE
           GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
           marker="not cwl_conformance"
           test_script="pytest"
