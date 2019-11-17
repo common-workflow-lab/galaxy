@@ -6,6 +6,7 @@ import Backbone from "backbone";
 import { getGalaxyInstance } from "app";
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
+import UiField from "mvc/ui/ui-field";
 import SelectContent from "mvc/ui/ui-select-content";
 import SelectLibrary from "mvc/ui/ui-select-library";
 import SelectFtp from "mvc/ui/ui-select-ftp";
@@ -40,6 +41,7 @@ export default Backbone.Model.extend({
         rules: "_fieldRulesEdit",
         directory_uri: "_fieldDirectoryUri",
         data_dialog: "_fieldDialog",
+        field: "_fieldField",
     },
 
     /** Returns an input field for a given field type */
@@ -259,6 +261,13 @@ export default Backbone.Model.extend({
     /** Upload file field */
     _fieldUpload: function (input_def) {
         return new Ui.Upload({
+            id: `field-${input_def.id}`,
+            onchange: input_def.onchange,
+        });
+    },
+
+    _fieldField: function (input_def) {
+        return new UiField({
             id: `field-${input_def.id}`,
             onchange: input_def.onchange,
         });
