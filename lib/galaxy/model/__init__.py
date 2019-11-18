@@ -5044,7 +5044,7 @@ class WorkflowStep(RepresentById):
         self.tool_inputs = None
         self.tool_errors = None
         self.dynamic_tool = None
-        self.position = None
+        self.position = WorkflowStep.DEFAULT_POSITION
         self.inputs = []
         self.config = None
         self.label = None
