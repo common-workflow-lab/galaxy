@@ -5639,12 +5639,21 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         OK = "ok"  # Collection elements populated (HDAs may or may not have errors)
         FAILED = "failed"  # some problem populating state, won't be populated
 
-    def __init__(self, id=None, collection_type=None, populated=True, element_count=None):
+    def __init__(
+        self,
+        id=None,
+        collection_type=None,
+        populated=True,
+        element_count=None,
+        fields=None,
+    ):
         self.id = id
         self.collection_type = collection_type
         if not populated:
             self.populated_state = DatasetCollection.populated_states.NEW
         self.element_count = element_count
+        # TODO: persist fields...
+        self.fields = fields
 
     def _get_nested_collection_attributes(
         self,
@@ -5786,6 +5795,10 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             self._populated_optimized = _populated_optimized
 
         return self._populated_optimized
+
+    @property
+    def allow_implicit_mapping(self):
+        return self.collection_type != "record"
 
     @property
     def populated(self):
