@@ -518,7 +518,10 @@ class DefaultToolAction:
                         assert not element_identifiers  # known_outputs must have been empty
                         element_kwds = dict(elements=collections_manager.ELEMENTS_UNINITIALIZED)
                     else:
-                        element_kwds = dict(element_identifiers=element_identifiers)
+                        element_kwds = dict(
+                            element_identifiers=element_identifiers,
+                            fields=output.structure.fields,
+                        )
                     output_collections.create_collection(
                         output=output,
                         name=name,

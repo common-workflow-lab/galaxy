@@ -258,18 +258,24 @@ class ToolOutputCollectionStructure:
         collection_type_from_rules=None,
         structured_like=None,
         dataset_collector_descriptions=None,
+        fields=None,
     ):
         self.collection_type = collection_type
         self.collection_type_source = collection_type_source
         self.collection_type_from_rules = collection_type_from_rules
         self.structured_like = structured_like
         self.dataset_collector_descriptions = dataset_collector_descriptions or []
+        self.fields = fields
         if collection_type and collection_type_source:
             raise ValueError("Cannot set both type and type_source on collection output.")
         if collection_type is None and structured_like is None and dataset_collector_descriptions is None and collection_type_source is None and collection_type_from_rules is None:
             raise ValueError("Output collection types must specify source of collection type information (e.g. structured_like or type_source).")
         if dataset_collector_descriptions and (structured_like or collection_type_from_rules):
             raise ValueError("Cannot specify dynamic structure (discovered_datasets) and collection type attributes structured_like or collection_type_from_rules.")
+        if collection_type == "record" and fields is None:
+            raise ValueError("If record outputs are defined, fields must be defined as well.")
+        if fields is not None and collection_type != "record":
+            raise ValueError("If fields are specified for outputs, the collection type must be record.")
         self.dynamic = bool(dataset_collector_descriptions)
 
     def collection_prototype(self, inputs, type_registry):
@@ -279,7 +285,7 @@ class ToolOutputCollectionStructure:
         else:
             collection_type = self.collection_type
             assert collection_type
-            collection_prototype = type_registry.prototype(collection_type)
+            collection_prototype = type_registry.prototype(collection_type, fields=self.fields)
             collection_prototype.collection_type = collection_type
         return collection_prototype
 

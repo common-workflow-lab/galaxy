@@ -8,9 +8,9 @@ class CollectionTypeDescriptionFactory:
         # I think.
         self.type_registry = type_registry
 
-    def for_collection_type(self, collection_type):
+    def for_collection_type(self, collection_type, fields=None):
         assert collection_type is not None
-        return CollectionTypeDescription(collection_type, self)
+        return CollectionTypeDescription(collection_type, self, fields=fields)
 
 
 class CollectionTypeDescription:
@@ -44,9 +44,10 @@ class CollectionTypeDescription:
     'paired'
     """
 
-    def __init__(self, collection_type, collection_type_description_factory):
+    def __init__(self, collection_type, collection_type_description_factory, fields=None):
         self.collection_type = collection_type
         self.collection_type_description_factory = collection_type_description_factory
+        self.fields = fields
         self.__has_subcollections = self.collection_type.find(":") > 0
 
     def child_collection_type(self):
