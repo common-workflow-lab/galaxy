@@ -219,7 +219,8 @@ class CwlRun:
             if history_content_type == "dataset":
                 return self.dataset_populator.get_history_dataset_details(self.history_id, dataset_id=content_id)
             else:
-                return self.dataset_populator.get_history_collection_details(self.history_id, content_id=content_id)
+                # Don't wait - we've already done that, history might be "new"
+                return self.dataset_populator.get_history_collection_details(self.history_id, content_id=content_id, wait=False)
 
         def get_dataset(dataset_details, filename=None):
             content = self.dataset_populator.get_history_dataset_content(self.history_id, dataset_id=dataset_details["id"], type='content', filename=filename)
@@ -579,9 +580,17 @@ class BaseDatasetPopulator:
         job = run["jobs"][0]
         return job
 
-    def wait_for_history(self, history_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
+    def wait_for_history(self, history_id, assert_ok=False, timeout=DEFAULT_TIMEOUT, hack_allow_new=False):
         try:
-            return wait_on_state(lambda: self._get("histories/%s" % history_id), desc="history state", assert_ok=assert_ok, timeout=timeout)
+            skip_states = ["running", "queued", "new", "ready"]
+            ok_states = ["ok"]
+            if hack_allow_new:
+                # If there are empty collections in the history for instance with no datasets,
+                # the history summary will be new even though there are jobs in the history.
+                skip_states = ["running", "queued", "ready"]
+                ok_states = ["new", "ok"]
+
+            return wait_on_state(lambda: self._get("histories/%s" % history_id), desc="history state", assert_ok=assert_ok, timeout=timeout, skip_states=skip_states, ok_states=ok_states)
         except AssertionError:
             self._summarize_history(history_id)
             raise
@@ -603,7 +612,9 @@ class BaseDatasetPopulator:
             raise TimeoutAssertionError(message)
 
         if assert_ok:
-            return self.wait_for_history(history_id, assert_ok=True, timeout=timeout)
+            jobs = self.history_jobs(history_id)
+            hack_allow_new = True if len(jobs) > 0 else False
+            return self.wait_for_history(history_id, assert_ok=True, timeout=timeout, hack_allow_new=hack_allow_new)
 
     def wait_for_job(self, job_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
         return wait_on_state(lambda: self.get_job_details(job_id), desc="job state", assert_ok=assert_ok, timeout=timeout)
@@ -1300,8 +1311,17 @@ class BaseWorkflowPopulator:
     def wait_for_invocation_and_jobs(self, history_id, workflow_id, invocation_id, assert_ok=True):
         # TODO: replace instances in workflow test cases with this to de-dup...
         self.wait_for_invocation(workflow_id, invocation_id)
+        url = "workflows/%s/usage/%s" % (workflow_id, invocation_id)
+        invocation = self._get(url)
+        steps = invocation.json()["steps"]
+        wait_for_jobs = False
+        for step in steps:
+            if step.get("job_id"):
+                wait_for_jobs = True
+                break
         time.sleep(.05)
-        self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok)
+        if wait_for_jobs:
+            self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok)
         time.sleep(.05)
 
 
@@ -1850,7 +1870,8 @@ def stage_rules_example(galaxy_interactor, history_id, example):
     return inputs
 
 
-def wait_on_state(state_func, desc="state", skip_states=None, assert_ok=False, timeout=DEFAULT_TIMEOUT):
+def wait_on_state(state_func, desc="state", skip_states=None, ok_states=None, assert_ok=False, timeout=DEFAULT_TIMEOUT):
+
     def get_state():
         response = state_func()
         assert response.status_code == 200, "Failed to fetch state update while waiting. [%s]" % response.content
@@ -1859,11 +1880,13 @@ def wait_on_state(state_func, desc="state", skip_states=None, assert_ok=False, t
             return None
         else:
             if assert_ok:
-                assert state == "ok", "Final state - %s - not okay." % state
+                assert state in ok_states, "Final state - %s - not okay." % state
             return state
 
     if skip_states is None:
         skip_states = ["running", "queued", "new", "ready"]
+    if ok_states is None:
+        ok_states = ["ok"]
     try:
         return wait_on(get_state, desc=desc, timeout=timeout)
     except TimeoutAssertionError as e:
