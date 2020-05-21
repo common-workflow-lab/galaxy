@@ -360,7 +360,7 @@ class ObjectUploadTarget:
         self.properties = {}
 
     def __str__(self):
-        return "ObjectUploadTarget[object=%s]" % self.object
+        return f"ObjectUploadTarget[object={self.object} with {self.properties}]"
 
 
 class DirectoryUploadTarget:

@@ -31,7 +31,6 @@ from galaxy.tool_util.cwl.util import (
     download_output,
     FileLiteralTarget,
     FileUploadTarget,
-    galactic_job_json,
     guess_artifact_type,
     invocation_to_output,
     output_to_cwl_json,
@@ -319,93 +318,14 @@ class CwlPopulator(object):
         if history_id is None:
             history_id = self.dataset_populator.new_history()
 
-        def upload_func(upload_target):
-            if isinstance(upload_target, FileUploadTarget):
-                path = upload_target.path
-
-                if upload_via == "path":
-                    content = "file://%s" % path
-                else:
-                    with open(path, "rb") as f:
-                        content = f.read()
-
-                name = os.path.basename(path)
-
-                extra_inputs = dict()
-                if upload_target.secondary_files:
-                    assert upload_via == "path"
-                    extra_inputs["files_1|url_paste"] = "file://%s" % upload_target.secondary_files
-                    extra_inputs["files_1|type"] = "upload_dataset"
-                    extra_inputs["files_1|auto_decompress"] = True
-                    extra_inputs["file_count"] = "2"
-                    extra_inputs["force_composite"] = "True"
-
-                return self.dataset_populator.new_dataset_request(
-                    history_id=history_id,
-                    content=content,
-                    file_type="auto",
-                    name=name,
-                    auto_decompress=False,
-                    extra_inputs=extra_inputs,
-                ).json()
-            elif isinstance(upload_target, FileLiteralTarget):
-                extra_inputs = dict()
-                return self.dataset_populator.new_dataset_request(
-                    history_id=history_id,
-                    content=upload_target.contents,
-                    file_type="auto",
-                    name="filex",
-                    auto_decompress=False,
-                    to_posix_lines=False,
-                    extra_inputs=extra_inputs,
-                ).json()
-            elif isinstance(upload_target, DirectoryUploadTarget):
-                path = upload_target.tar_path
-
-                if upload_via == "path":
-                    # TODO: basename?
-                    payload = self.dataset_populator.upload_payload(
-                        history_id, 'file://%s' % path, ext="tar", auto_decompress=False
-                    )
-                else:
-                    raise NotImplementedError()
-                create_response = self.dataset_populator._post("tools", data=payload)
-                assert create_response.status_code == 200
-
-                convert_response = self.dataset_populator.run_tool(
-                    tool_id="CONVERTER_tar_to_directory",
-                    inputs={"input1": {"src": "hda", "id": create_response.json()["outputs"][0]["id"]}},
-                    history_id=history_id,
-                )
-                assert "outputs" in convert_response, convert_response
-                return convert_response
-            else:
-                content = json.dumps(upload_target.object)
-                return self.dataset_populator.new_dataset_request(
-                    history_id=history_id,
-                    content=content,
-                    file_type="expression.json",
-                ).json()
-
-        def create_collection_func(element_identifiers, collection_type):
-            payload = {
-                "name": "dataset collection",
-                "instance_type": "history",
-                "history_id": history_id,
-                "element_identifiers": json.dumps(element_identifiers),
-                "collection_type": collection_type,
-                "fields": None if collection_type != "record" else "auto",
-            }
-            response = self.dataset_populator._post("dataset_collections", data=payload)
-            assert response.status_code == 200
-            return response.json()
-
-        job_as_dict, datasets_uploaded = galactic_job_json(
+        jobs_as_dict, datasets_uploaded = stage_inputs(
+            self.dataset_populator.galaxy_interactor,
+            history_id,
             job_as_dict,
-            test_data_directory,
-            upload_func,
-            create_collection_func,
-            tool_or_workflow=tool_or_workflow,
+            use_fetch_api=False,
+            job_dir=test_data_directory,
+            use_path_paste=upload_via == "path",
+            is_cwl_tool=tool_or_workflow == "tool",
         )
         if datasets_uploaded:
             self.dataset_populator.wait_for_history(history_id=history_id, assert_ok=True)
@@ -1853,10 +1773,19 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
     return inputs, label_map, has_uploads
 
 
-def stage_inputs(galaxy_interactor, history_id, job, use_path_paste=True, use_fetch_api=True, to_posix_lines=True):
+def stage_inputs(galaxy_interactor, history_id, job, use_path_paste=True, use_fetch_api=True, to_posix_lines=True, is_cwl_tool=False, job_dir=None):
     """Alternative to load_data_dict that uses production-style workflow inputs."""
+    tool_or_workflow = "workflow" if not is_cwl_tool else "tool"
+    kwds = dict(
+        history_id=history_id,
+        job=job,
+        use_path_paste=use_path_paste,
+        to_posix_lines=to_posix_lines,
+    )
+    if job_dir is not None:
+        kwds["job_dir"] = job_dir
     inputs, datasets = InteractorStaging(galaxy_interactor, use_fetch_api=use_fetch_api).stage(
-        "workflow", history_id=history_id, job=job, use_path_paste=use_path_paste, to_posix_lines=to_posix_lines
+        tool_or_workflow, **kwds
     )
     return inputs, datasets
 
