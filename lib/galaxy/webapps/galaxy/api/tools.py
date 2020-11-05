@@ -19,6 +19,7 @@ from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from ._fetch_util import validate_and_normalize_targets
 
+
 log = logging.getLogger(__name__)
 
 # Do not allow these tools to be called directly - they (it) enforces extra security and

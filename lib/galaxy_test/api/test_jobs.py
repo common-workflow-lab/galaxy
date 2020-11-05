@@ -150,7 +150,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         #    self._assert_status_code_is( show_jobs_response, 200 )
 
         show_jobs_response = self._get("jobs/%s" % job_id, admin=True)
-        self._assert_has_keys(show_jobs_response.json(), "command_line", "external_id")
+        self._assert_has_keys(show_jobs_response.json(), "command_line", "external_id"),
 
     def _run_detect_errors(self, history_id, inputs):
         payload = self.dataset_populator.run_tool_payload(

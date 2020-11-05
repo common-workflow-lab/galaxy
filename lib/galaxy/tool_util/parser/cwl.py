@@ -23,6 +23,8 @@ GX_INTERFACE_NAMESPACE = "http://galaxyproject.org/cwl#interface"
 
 CWL_DEFAULT_FILE_OUTPUT = "data"  # set to _sniff_ to sniff output types automatically.
 
+CWL_DEFAULT_FILE_OUTPUT = "data"  # set to _sniff_ to sniff output types automatically.
+
 log = logging.getLogger(__name__)
 
 
