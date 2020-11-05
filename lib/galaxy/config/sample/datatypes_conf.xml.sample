@@ -228,7 +228,7 @@
     <datatype extension="tar" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true">
       <converter file="tar_to_directory.xml" target_datatype="directory"/>
     </datatype>
-    <datatype extension="directory" type="galaxy.datatypes.data:Directory">
+    <datatype extension="directory" type="galaxy.datatypes.data:Directory" display_in_upload="true">
     </datatype>
     <!-- Proteomics Datatypes -->
     <datatype extension="mrm" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true" subclass="true"/>

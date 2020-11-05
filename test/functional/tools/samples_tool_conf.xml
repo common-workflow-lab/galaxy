@@ -1,5 +1,17 @@
 <?xml version="1.0"?>
 <toolbox tool_path="${tool_conf_dir}" is_shed_conf="false">
+
+  <!-- workflow-is-cwl test
+  <tool file="../../../../workflow-is-cwl/tools/Diamond/Diamon.makedb-v0.9.21.cwl" />
+  <tool file="../../../../workflow-is-cwl/tools/BUSCO/BUSCO-v3.cwl" />
+  <tool file="../../../../workflow-is-cwl/tools/TransDecoder/TransDecoder.LongOrfs-v5.cwl" />
+  <tool file="../../../../workflow-is-cwl/tools/Infernal/cmsearch/infernal-cmsearch-v1.1.2.cwl" />
+  <tool file="../../../../workflow-is-cwl/tools/InterProScan/InterProScan-v5.cwl" />
+  <tool file="../../../../workflow-is-cwl/tools/HMMER/phmmer-v3.2.cwl" />
+  <tool file="../../../../workflow-is-cwl/tools/BUSCO/BUSCO-v3.cwl" />
+  <tool file="../../../../workflow-is-cwl/tools/cmsearch-deoverlap/cmsearch-deoverlap-v0.02.cwl" />
+  -->
+
   <tool file="upload.xml"/>
   <section id="test" name="Test Section">
     <tool file="multi_data_optional.xml" />
@@ -182,6 +194,47 @@
 
   <tool file="interactivetool_simple.xml" />
   <tool file="interactivetool_two_entry_points.xml" />
+
+  <!--
+  <tool file="cwl_tools/draft3/null-expression1-tool.cwl" />
+  <tool file="cwl_tools/draft3/null-expression2-tool.cwl" />
+  <tool file="cwl_tools/draft3/params.cwl" />
+  <tool file="cwl_tools/draft3/parseInt-tool.cwl" />
+  -->
+  <tool file="cwl_tools/v1.0_custom/any1.cwl" />
+
+  <!-- CWL Testing -->
+  <!--
+  <tool file="cwl_tools/draft3/cat1-tool.cwl" />
+  <tool file="cwl_tools/draft3/cat2-tool.cwl" />
+  -->
+  <tool file="cwl_tools/v1.0/cat3-tool.cwl" />
+  <!--
+  <tool file="cwl_tools/draft3/cat4-tool.cwl" />
+  <tool file="cwl_tools/draft3/bwa-mem-tool.cwl" />
+  <tool file="cwl_tools/draft3/env-tool1.cwl" />
+  <tool file="cwl_tools/draft3/env-tool2.cwl" />
+  <tool file="cwl_tools/draft3/optional-output.cwl" />
+  <tool file="cwl_tools/draft3/rename.cwl" />
+  <tool file="cwl_tools/draft3/sorttool.cwl" />
+  <tool file="cwl_tools/draft3/wc-tool.cwl" />
+  <tool file="cwl_tools/draft3/wc2-tool.cwl" />
+  <tool file="cwl_tools/draft3/wc3-tool.cwl" />
+  <tool file="cwl_tools/draft3/wc4-tool.cwl" />
+
+  <tool file="cwl_tools/draft3_custom/cat-default.cwl" />
+  <tool file="cwl_tools/draft3_custom/index1.cwl" />
+  <tool file="cwl_tools/draft3_custom/optional-output2.cwl" />
+  <tool file="cwl_tools/draft3_custom/showindex1.cwl" />
+  -->
+
+  <tool file="cwl_tools/v1.0/default_path.cwl" />
+  <tool file="cwl_tools/v1.0_custom/default_path_custom_1.cwl" />
+  <!--
+  <tool file="cwl_tools/v1.0_custom/md5sum_non_strict.cwl" />
+  -->
+  <tool file="cwl_tools/v1.0/record-output.cwl" />
+
 
   <!-- Tools interesting only for building up test workflows. -->
 

@@ -15,6 +15,7 @@ from galaxy.webapps.base.controller import BaseAPIController
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from ._fetch_util import validate_and_normalize_targets
 
+
 log = logging.getLogger(__name__)
 
 # Do not allow these tools to be called directly - they (it) enforces extra security and
@@ -499,9 +500,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             target_history = None
 
         # Set up inputs.
-        inputs = payload.get('inputs', {})
-        if not isinstance(inputs, dict):
-            raise exceptions.RequestParameterInvalidException("inputs invalid %s" % inputs)
+        inputs = tool.inputs_from_dict(payload)
 
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.items():

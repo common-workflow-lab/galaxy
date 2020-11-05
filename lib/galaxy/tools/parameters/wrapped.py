@@ -1,6 +1,7 @@
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
+    FieldTypeToolParameter,
     SelectToolParameter
 )
 from galaxy.tools.parameters.grouping import (
@@ -100,6 +101,31 @@ class WrappedParameters:
                     tool=tool,
                     name=input.name,
                 )
+            elif isinstance(input, FieldTypeToolParameter):
+                if value is None:
+                    return None
+
+                if not isinstance(value, dict):
+                    raise Exception("Simple values [%s] need to be wrapped in a JSON envelope" % input)
+
+                assert "value" in value, value
+                assert "src" in value
+                src = value["src"]
+                if src == "json":
+                    return InputValueWrapper(input, value, incoming)
+                elif src == "hda":
+                    return DatasetFilenameWrapper(value["value"],
+                                                  datatypes_registry=trans.app.datatypes_registry,
+                                                  tool=tool,
+                                                  name=input.name)
+                elif src == "hdca":
+                    return DatasetCollectionWrapper(None,
+                                                    value["value"],
+                                                    datatypes_registry=trans.app.datatypes_registry,
+                                                    tool=tool,
+                                                    name=input.name)
+                else:
+                    assert False, "Unknown src encountered [%s] for field type value [%s]" % (src, value)
             else:
                 input_values[input.name] = InputValueWrapper(input, value, incoming)
 

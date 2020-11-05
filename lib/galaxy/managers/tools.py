@@ -6,6 +6,7 @@ from sqlalchemy import sql
 from galaxy import exceptions
 from galaxy import model
 from galaxy.exceptions import DuplicatedIdentifierException
+from galaxy.tool_util.cwl import tool_proxy
 from .base import ModelManager
 from .executables import artifact_class
 
@@ -75,6 +76,29 @@ class DynamicToolManager(ModelManager):
 
             tool_version = representation.get("version", None)
             value = representation
+        elif tool_format in ["CommandLineTool", "ExpressionTool"]:
+            # CWL tools
+            uuid = tool_payload.get("uuid", None)
+            if uuid is None:
+                uuid = uuid4()
+            tool_id = representation.get("id", None)
+            tool_version = representation.get("version", None)
+            tool_path = tool_payload.get("path", None)
+            if is_path:
+                proxy = tool_proxy(tool_path=tool_path, uuid=uuid)
+                tool_id = proxy.galaxy_id()
+            elif "pickle" in representation:
+                # It has already been proxies and pickled - just take the tool as is.
+                assert 'uuid' in representation
+                # Why is this here though - creating a tool from pickled representation?
+                # Seems bad at first glance...
+                uuid = representation["uuid"]
+            else:
+                # Else - build a tool proxy so that we can convert to the presistable
+                # hash.
+                proxy = tool_proxy(tool_object=representation, tool_directory=tool_directory, uuid=uuid)
+                tool_id = proxy.galaxy_id()
+            value = representation
         else:
             raise Exception("Unknown tool type encountered.")
         # TODO: enforce via DB constraint and catch appropriate
@@ -83,6 +107,7 @@ class DynamicToolManager(ModelManager):
         if existing_tool is not None and not allow_load:
             raise DuplicatedIdentifierException(existing_tool.id)
         elif existing_tool:
+            assert existing_tool.uuid == uuid
             dynamic_tool = existing_tool
         else:
             dynamic_tool = self.create(
@@ -94,7 +119,7 @@ class DynamicToolManager(ModelManager):
                 uuid=uuid,
                 value=value,
             )
-            self.app.toolbox.load_dynamic_tool(dynamic_tool)
+        self.app.toolbox.load_dynamic_tool(dynamic_tool)
         return dynamic_tool
 
     def list_tools(self, active=True):

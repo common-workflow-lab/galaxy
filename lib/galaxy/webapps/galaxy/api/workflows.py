@@ -364,7 +364,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     raise exceptions.MessageException("You attempted to upload an empty file.")
             else:
                 raise exceptions.MessageException("Please provide a URL or file.")
-            return self.__api_import_from_archive(trans, archive_data, "uploaded file")
+            return self.__api_import_from_archive(trans, archive_data, "uploaded file", from_path=os.path.abspath(uploaded_file_name))
 
         if 'from_history_id' in payload:
             from_history_id = payload.get('from_history_id')
@@ -666,9 +666,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     #
     # -- Helper methods --
     #
-    def __api_import_from_archive(self, trans, archive_data, source=None):
+    def __api_import_from_archive(self, trans, archive_data, source=None, from_path=None):
         try:
             data = json.loads(archive_data)
+            if from_path is not None:
+                data.update({"src": "from_path", "path": from_path})
         except Exception:
             if "GalaxyWorkflow" in archive_data:
                 data = {"yaml_content": archive_data}

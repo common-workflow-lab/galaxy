@@ -8,6 +8,7 @@ import os
 
 
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.model.none_like import NoneDataset
 from galaxy.util import safe_makedirs, string_as_bool
 from galaxy.util.bunch import Bunch
 from .util import set_basename_and_derived_properties

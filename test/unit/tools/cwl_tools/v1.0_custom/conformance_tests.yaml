@@ -1,0 +1,99 @@
+
+- job: v1.0/record-output-job.json
+  output:
+    "orec": {
+        "ofoo": {
+            "location": "foo",
+            "size": 1111,
+            "class": "File",
+            "checksum": "sha1$327fc7aedf4f6b69a42a7c8b808dc5a7aff61376"
+        },
+        "obar": {
+            "location": "bar",
+            "size": 12010,
+            "class": "File",
+            "checksum": "sha1$aeb3d11bdf536511649129f4077d5cda6a324118"
+        }
+    }
+  tool: v1.0_custom/record-output-wf.cwl
+  doc: Test record type inputs to and outputs from workflows.
+
+- job: v1.0_custom/int-io-job.json
+  output: {"o": 10}
+  tool: v1.0_custom/int-io-wf.cwl
+  doc: Test integer workflow input and outputs
+
+- job: v1.0_custom/int-io-job.json
+  output: {"o": 10}
+  tool: v1.0_custom/int-opt-io-wf.cwl
+  doc: Test optional integer workflow inputs (specified)
+
+- job: v1.0_custom/empty.json
+  output: {"o": 4}
+  tool: v1.0_custom/int-opt-io-wf.cwl
+  doc: Test optional integer workflow inputs (unspecified)
+
+- job: v1.0_custom/empty.json
+  output: {"o": 10}
+  tool: v1.0_custom/int-default-io-wf.cwl
+  doc: Test default integer workflow inputs (unspecified)
+
+- job: v1.0_custom/any1-int.json
+  output: {"t1": 7}
+  tool: v1.0_custom/any1.cwl
+  doc: Test any parameter with integer input to a tool
+
+- job: v1.0_custom/any1-string.json
+  output: {"t1": "7"}
+  tool: v1.0_custom/any1.cwl
+  doc: Test any parameter with string input to a tool
+
+- job: v1.0_custom/any1-file.json
+  output: {"t1": {
+            "location": "foo",
+            "size": 1111,
+            "class": "File",
+            "checksum": "sha1$327fc7aedf4f6b69a42a7c8b808dc5a7aff61376"
+  }}
+  tool: v1.0_custom/any1.cwl
+  doc: Test any parameter with file input to a tool
+
+- job: v1.0_custom/any1-int.json
+  output: {"t1": 7}
+  tool: v1.0_custom/any1-wf.cwl
+  doc: Test any parameter with integer input to a workflow
+
+- job: v1.0_custom/any1-string.json
+  output: {"t1": "7"}
+  tool: v1.0_custom/any1-wf.cwl
+  doc: Test any parameter with string input to a workflow
+
+- job: v1.0_custom/any1-file.json
+  output: {"t1": {
+            "location": "foo",
+            "size": 1111,
+            "class": "File",
+            "checksum": "sha1$327fc7aedf4f6b69a42a7c8b808dc5a7aff61376"
+  }}
+  tool: v1.0_custom/any1-wf.cwl
+  doc: Test any parameter with file input to a workflow
+
+- job: v1.0_custom/empty.json
+  output: {"o": {
+            "location": "foo",
+            "size": 1111,
+            "class": "File",
+            "checksum": "sha1$327fc7aedf4f6b69a42a7c8b808dc5a7aff61376"
+  }}
+  tool: v1.0_custom/default_path_custom_1_wf.cwl
+  doc: Test File input with default unspecified
+
+- job: v1.0_custom/empty.json
+  output: {"o": "the default value"}
+  tool: v1.0_custom/union-input-default-wf.cwl
+  doc: Test union type input to workflow with default unspecified
+
+- job: v1.0_custom/union-input-default-job-file.json
+  output: {"o": "File"}
+  tool: v1.0_custom/union-input-default-wf.cwl
+  doc: Test union type input to workflow with default specified as file

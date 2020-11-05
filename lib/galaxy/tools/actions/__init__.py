@@ -81,7 +81,9 @@ class DefaultToolAction:
         def visitor(input, value, prefix, parent=None, **kwargs):
 
             def process_dataset(data, formats=None):
-                if not data or isinstance(data, RuntimeValue):
+                # default file coming from a workflow
+                is_workflow_default = isinstance(data, dict) and data.get("class") == "File"
+                if not data or isinstance(data, RuntimeValue) or is_workflow_default:
                     return None
                 if formats is None:
                     formats = input.formats
@@ -720,6 +722,9 @@ class DefaultToolAction:
                     if name not in reductions:
                         reductions[name] = []
                     reductions[name].append(dataset_collection)
+
+                if getattr(dataset_collection, "ephemeral", False):
+                    dataset_collection = dataset_collection.persistent_object
 
                 # TODO: verify can have multiple with same name, don't want to lose traceability
                 if isinstance(dataset_collection, model.HistoryDatasetCollectionAssociation):

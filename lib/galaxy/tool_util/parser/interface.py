@@ -227,6 +227,11 @@ class ToolSource(metaclass=ABCMeta):
         Return minimum python version that the tool template has been developed against.
         """
 
+    def parse_cores_min(self):
+        """Return minimum number of cores required to run this tool.
+        """
+        return 1
+
     @property
     def macro_paths(self):
         return []

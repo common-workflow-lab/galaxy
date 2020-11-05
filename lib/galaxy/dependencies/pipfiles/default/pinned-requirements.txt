@@ -194,3 +194,5 @@ whoosh==2.7.4
 wrapt==1.12.1
 yacman==0.6.7
 zipp==1.2.0 ; python_version < '3.8'
+# For CWL support.
+cwltest==1.0.20170809112706  # TODO: only required for testing...
