@@ -80,7 +80,9 @@ class DefaultToolAction:
         def visitor(input, value, prefix, parent=None, **kwargs):
 
             def process_dataset(data, formats=None):
-                if not data or isinstance(data, RuntimeValue):
+                # default file coming from a workflow
+                is_workflow_default = isinstance(data, dict) and data.get("class") == "File"
+                if not data or isinstance(data, RuntimeValue) or is_workflow_default:
                     return None
                 if formats is None:
                     formats = input.formats
@@ -231,7 +233,7 @@ class DefaultToolAction:
                         # collection with individual datasets. Database will still
                         # record collection which should be enought for workflow
                         # extraction and tool rerun.
-                        if hasattr(value, 'child_collection'):
+                        if hasattr(value, 'child_collection') and value.child_collection:
                             # if we are mapping a collection over a tool, we only require the child_collection
                             dataset_instances = value.child_collection.dataset_instances
                         else:
@@ -730,6 +732,9 @@ class DefaultToolAction:
                     if name not in reductions:
                         reductions[name] = []
                     reductions[name].append(dataset_collection)
+
+                if getattr(dataset_collection, "ephemeral", False):
+                    dataset_collection = dataset_collection.persistent_object
 
                 # TODO: verify can have multiple with same name, don't want to lose traceability
                 if isinstance(dataset_collection, model.HistoryDatasetCollectionAssociation):

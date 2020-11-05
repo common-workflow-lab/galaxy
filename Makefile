@@ -135,6 +135,9 @@ update-lint-requirements:
 update-dependencies: update-lint-requirements ## update pinned and dev dependencies
 	$(IN_VENV) ./lib/galaxy/dependencies/update.sh
 
+update-cwl-conformance-tests: ## update CWL conformance tests
+	./test/unit/tools/cwl_tools/update_versions.sh
+
 node-deps: ## Install NodeJS dependencies.
 ifndef YARN
 	@echo "Could not find yarn, which is required to build the Galaxy client.\nTo install yarn, please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"

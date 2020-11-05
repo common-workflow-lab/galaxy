@@ -995,6 +995,10 @@ class JobWrapper(HasResourceParameters):
         # Should the job handler split this job up?
         return self.app.config.use_tasked_jobs and self.tool.parallelism
 
+    @property
+    def is_cwl_job(self):
+        return self.tool.tool_type == "cwl"
+
     def get_job_runner_url(self):
         log.warning('(%s) Job runner URLs are deprecated, use destinations instead.' % self.job_id)
         return self.job_destination.url

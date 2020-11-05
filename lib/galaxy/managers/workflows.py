@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import tempfile
 import uuid
 from collections import namedtuple
 from typing import (
@@ -26,6 +27,7 @@ from galaxy import (
 )
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.tool_util.cwl import workflow_proxy
 from galaxy.tools.parameters import (
     params_to_incoming,
     visit_input_values
@@ -340,6 +342,32 @@ class WorkflowContentsManager(UsesAnnotations):
             import_options = ImportOptions()
             import_options.deduplicate_subworkflows = True
             as_dict = python_to_workflow(as_dict, galaxy_interface, workflow_directory=workflow_directory, import_options=import_options)
+        elif workflow_class == "Workflow":
+            from galaxy.tool_util.cwl import workflow_proxy
+            # create a temporary file for the workflow if it is provided
+            # as JSON, to make it parseable by the WorkflowProxy
+            if workflow_path is None:
+                f = tempfile.NamedTemporaryFile(delete=False)
+                json.dump(as_dict, f)
+                workflow_path = f.name
+                f.close()
+                if object_id:
+                    workflow_path += "#" + object_id
+                wf_proxy = workflow_proxy(workflow_path)
+                os.unlink(f.name)
+            else:
+                # TODO: consume and use object_id...
+                if object_id:
+                    workflow_path += "#" + object_id
+                wf_proxy = workflow_proxy(workflow_path)
+            tool_reference_proxies = wf_proxy.tool_reference_proxies()
+            for tool_reference_proxy in tool_reference_proxies:
+                # TODO: Namespace IDS in workflows.
+                representation = tool_reference_proxy.to_persistent_representation()
+                self.app.dynamic_tool_manager.create_tool(trans, {
+                    "representation": representation,
+                }, allow_load=True)
+            as_dict = wf_proxy.to_dict()
 
         return RawWorkflowDescription(as_dict, workflow_path)
 
@@ -467,6 +495,10 @@ class WorkflowContentsManager(UsesAnnotations):
         data = raw_workflow_description.as_dict
         if isinstance(data, str):
             data = json.loads(data)
+        if "src" in data:
+            assert data["src"] == "path"
+            wf_proxy = workflow_proxy(data["path"])
+            data = wf_proxy.to_dict()
 
         # Create new workflow from source data
         workflow = model.Workflow()
@@ -1333,6 +1365,19 @@ class WorkflowContentsManager(UsesAnnotations):
 
         # Stick this in the step temporarily
         step.temp_input_connections = step_dict.get('input_connections', {})
+
+        if "inputs" in step_dict:
+            for input_dict in step_dict["inputs"]:
+                step_input = model.WorkflowStepInput(step)
+                step_input.name = input_dict["name"]
+                step_input.merge_type = input_dict.get("merge_type", step_input.default_merge_type)
+                step_input.scatter_type = input_dict.get("scatter_type", step_input.default_scatter_type)
+                value_from = input_dict.get("value_from", None)
+                if value_from is None:
+                    # Super hacky - we probably need distinct value from and
+                    # default handling.
+                    value_from = input_dict.get("default")
+                step_input.value_from = value_from
 
         # Create the model class for the step
         steps.append(step)

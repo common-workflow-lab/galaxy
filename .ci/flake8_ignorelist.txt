@@ -13,8 +13,13 @@ doc/source/conf.py
 eggs
 lib/galaxy/util/jstree.py
 lib/galaxy/web/proxy/js/node_modules
+lib/galaxy_test/api/cwl/test_cwl_conformance_v1_0.py
+lib/galaxy_test/api/cwl/test_cwl_conformance_v1_1.py
+lib/galaxy_test/api/cwl/test_cwl_conformance_v1_2.py
 static/maps
 static/scripts
 test/unit/tools/cwl_tools/v1.0/
+test/unit/tools/cwl_tools/v1.1/
+test/unit/tools/cwl_tools/v1.2/
 build
 dist

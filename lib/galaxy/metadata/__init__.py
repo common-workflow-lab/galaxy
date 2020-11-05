@@ -157,6 +157,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             "datatypes_config": datatypes_config,
             "max_metadata_value_size": max_metadata_value_size,
             "outputs": outputs,
+            "job_id_tag": job.get_id_tag(),
         }
 
         if self.write_object_store_conf:
@@ -185,7 +186,6 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             # setup the rest
             metadata_params["tool"] = tool_as_dict
             metadata_params["tool_path"] = tool.config_file
-            metadata_params["job_id_tag"] = job.get_id_tag()
             metadata_params["job_params"] = job.raw_param_dict()
             metadata_params["output_collections"] = output_collections
 

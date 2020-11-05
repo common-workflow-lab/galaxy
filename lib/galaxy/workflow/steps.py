@@ -1,6 +1,7 @@
 """ This module contains utility methods for reasoning about and ordering
 workflow steps.
 """
+import logging
 import math
 
 from galaxy.util.topsort import (
@@ -8,6 +9,8 @@ from galaxy.util.topsort import (
     topsort,
     topsort_levels
 )
+
+log = logging.getLogger(__name__)
 
 
 def attach_ordered_steps(workflow, steps):

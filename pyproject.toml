@@ -74,6 +74,7 @@ Whoosh = "*"
 zipstream-new = "*"
 
 [tool.poetry.dev-dependencies]
+cwltest = "2.0.20200626112502"
 gunicorn = "*"
 lxml = "!=4.2.2"
 NoseHTML = "*"

@@ -155,6 +155,7 @@ def setup_galaxy_config(
     conda_auto_init=False,
     conda_auto_install=False,
     use_shared_connection_for_amqp=False,
+    allow_path_paste=False,
 ):
     """Setup environment and build config for test Galaxy instance."""
     # For certain docker operations this needs to be evaluated out - e.g. for cwltool.
@@ -216,11 +217,13 @@ def setup_galaxy_config(
     config = dict(
         admin_users='test@bx.psu.edu',
         allow_library_path_paste=True,
+        allow_path_paste=allow_path_paste,
         allow_user_creation=True,
         allow_user_deletion=True,
         api_allow_run_as='test@bx.psu.edu',
         auto_configure_logging=logging_config_file is None,
         check_migrate_tools=False,
+        check_upload_content=False,
         chunk_upload_size=100,
         conda_prefix=conda_prefix,
         conda_auto_init=conda_auto_init,
@@ -257,6 +260,7 @@ def setup_galaxy_config(
         monitor_thread_join_timeout=5,
         object_store_store_by="uuid",
         simplified_workflow_run_ui="off",
+        strict_cwl_validation=False,
     )
     if default_shed_tool_data_table_config:
         config["shed_tool_data_table_config"] = default_shed_tool_data_table_config
@@ -1032,6 +1036,7 @@ class GalaxyTestDriver(TestDriver):
                     galaxy_config = galaxy_config()
                 if galaxy_config is None:
                     setup_galaxy_config_kwds = dict(
+                        allow_path_paste=getattr(config_object, "allow_path_paste", False),
                         use_test_file_dir=not self.testing_shed_tools,
                         default_install_db_merged=True,
                         default_tool_conf=self.default_tool_conf,

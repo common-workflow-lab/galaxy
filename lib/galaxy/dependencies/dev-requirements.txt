@@ -38,6 +38,7 @@ coloredlogs==15.0; python_version >= "3.6" and python_full_version < "3.0.0" and
 commonmark==0.9.1
 coverage==5.3.1; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4"
 cryptography==3.3.1; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3.6"
+cwltest==2.0.20200626112502; python_version >= "3.5" and python_version < "4"
 cwltool==3.0.20201109103151; python_version >= "3.6" and python_version < "4"
 dataclasses==0.8; python_version >= "3.6" and python_version < "3.7"
 debtcollector==2.2.0; python_version >= "3.6"
@@ -79,6 +80,7 @@ jinja2==2.11.2; python_version >= "3.5" and python_full_version < "3.0.0" or pyt
 jmespath==0.10.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.3.0" and python_version >= "3.6"
 jsonpatch==1.28; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
 jsonpointer==2.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
+junit-xml==1.9; python_version >= "3.5" and python_version < "4"
 keystoneauth1==4.3.0; python_version >= "3.6"
 kombu==5.0.2; python_version >= "3.6"
 lockfile==0.12.2; python_version >= "3.6" and python_version < "4"

@@ -65,7 +65,7 @@ class LocalJobRunner(BaseJobRunner):
         if slots:
             slots_statement = 'GALAXY_SLOTS="%d"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;' % (int(slots))
         else:
-            slots_statement = 'GALAXY_SLOTS="1"; export GALAXY_SLOTS;'
+            slots_statement = 'GALAXY_SLOTS="%d"; export GALAXY_SLOTS;' % (job_wrapper.tool.cores_min)
 
         job_id = job_wrapper.get_id_tag()
         job_file = JobState.default_job_file(job_wrapper.working_directory, job_id)

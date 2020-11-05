@@ -439,7 +439,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         else:
             self.__input_supplied = True
 
-        if hasattr(has_collection, "name"):
+        if hasattr(has_collection, "history_content_type"):
             # It is a HistoryDatasetCollectionAssociation
             collection = has_collection.collection
             self.name = has_collection.name
@@ -485,6 +485,9 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         if not self.__input_supplied:
             return []
         return self.__element_instances.keys()
+
+    def items(self):
+        return self.__element_instances.items()
 
     @property
     def is_collection(self):

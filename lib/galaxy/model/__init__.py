@@ -5051,6 +5051,7 @@ class WorkflowStep(RepresentById):
         self.uuid = uuid4()
         self.workflow_outputs = []
         self._input_connections_by_name = None
+        self._inputs_by_name = None
 
     @property
     def tool_uuid(self):
@@ -5136,6 +5137,12 @@ class WorkflowStep(RepresentById):
             self.setup_input_connections_by_name()
         return self._input_connections_by_name
 
+    @property
+    def inputs_by_name(self):
+        if self._inputs_by_name is None:
+            self.setup_inputs_by_name()
+        return self._inputs_by_name
+
     def setup_input_connections_by_name(self):
         # Ensure input_connections has already been set.
 
@@ -5147,6 +5154,17 @@ class WorkflowStep(RepresentById):
                 input_connections_by_name[input_name] = []
             input_connections_by_name[input_name].append(conn)
         self._input_connections_by_name = input_connections_by_name
+
+    def setup_inputs_by_name(self):
+        # Ensure input_connections has already been set.
+
+        # Make connection information available on each step by input name.
+        inputs_by_name = {}
+        for step_input in self.inputs:
+            input_name = step_input.name
+            assert input_name not in inputs_by_name
+            inputs_by_name[input_name] = step_input
+        self._inputs_by_name = inputs_by_name
 
     def create_or_update_workflow_output(self, output_name, label, uuid):
         output = self.workflow_output_for(output_name)
@@ -5209,7 +5227,7 @@ class WorkflowStep(RepresentById):
         copied_step.workflow_outputs = copy_list(self.workflow_outputs, copied_step)
 
     def log_str(self):
-        return "WorkflowStep[index=%d,type=%s]" % (self.order_index, self.type)
+        return "WorkflowStep[index=%d,type=%s,label=%s]" % (self.order_index, self.type, self.label)
 
     def clear_module_extras(self):
         # the module code adds random dynamic state to the step, this
@@ -5222,8 +5240,8 @@ class WorkflowStep(RepresentById):
 
 
 class WorkflowStepInput(RepresentById):
-    default_merge_type = None
-    default_scatter_type = None
+    default_merge_type = "merge_flattened"
+    default_scatter_type = "dotproduct"
 
     def __init__(self, workflow_step):
         self.workflow_step = workflow_step
@@ -5280,6 +5298,11 @@ class WorkflowStepConnection(RepresentById):
         copied_connection = WorkflowStepConnection()
         copied_connection.output_name = self.output_name
         return copied_connection
+
+    def log_str(self):
+        return "WorkflowStepConnection[output_step_id={},output_name={},input_step_id={},input_name={}]".format(
+            self.output_step_id, self.output_name, self.input_step_id, self.input_name
+        )
 
 
 class WorkflowOutput(RepresentById):

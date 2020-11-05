@@ -1,8 +1,10 @@
 import logging
+import os
 import uuid
 from collections import OrderedDict
 
 from galaxy import model
+from galaxy.tool_util.cwl.util import abs_path
 from galaxy.util import ExecutionTimer
 from galaxy.workflow import modules
 from galaxy.workflow.run_request import (
@@ -10,6 +12,7 @@ from galaxy.workflow.run_request import (
     workflow_run_config_to_request,
     WorkflowRunConfig
 )
+
 
 log = logging.getLogger(__name__)
 
@@ -273,7 +276,7 @@ STEP_OUTPUT_DELAYED = object()
 
 class WorkflowProgress:
 
-    def __init__(self, workflow_invocation, inputs_by_step_id, module_injector, param_map, jobs_per_scheduling_iteration=-1):
+    def __init__(self, workflow_invocation, inputs_by_step_id, module_injector, param_map, workflow_mapping_structure=None, jobs_per_scheduling_iteration=-1):
         self.outputs = OrderedDict()
         self.module_injector = module_injector
         self.workflow_invocation = workflow_invocation
@@ -281,6 +284,7 @@ class WorkflowProgress:
         self.param_map = param_map
         self.jobs_per_scheduling_iteration = jobs_per_scheduling_iteration
         self.jobs_scheduled_this_iteration = 0
+        self.workflow_mapping_structure = workflow_mapping_structure
 
     @property
     def maximum_jobs_to_schedule_or_none(self):
@@ -288,6 +292,10 @@ class WorkflowProgress:
             return self.jobs_per_scheduling_iteration - self.jobs_scheduled_this_iteration
         else:
             return None
+
+    @property
+    def trans(self):
+        return self.module_injector.trans
 
     def record_executed_job_count(self, job_count):
         self.jobs_scheduled_this_iteration += job_count
@@ -319,6 +327,104 @@ class WorkflowProgress:
                 remaining_steps.append((step, invocation_step))
         return remaining_steps
 
+    def replacement_for_input_connections(self, step, input_dict, connections):
+        replacement = modules.NO_REPLACEMENT
+
+        prefixed_name = input_dict["name"]
+        step_input = step.inputs_by_name.get(prefixed_name, None)
+
+        merge_type = model.WorkflowStepInput.default_merge_type
+        if step_input:
+            merge_type = step_input.merge_type
+
+        is_data = input_dict["input_type"] in ["dataset", "dataset_collection"]
+        if len(connections) == 1:
+            replacement = self.replacement_for_connection(connections[0], is_data=is_data)
+        else:
+            # We've mapped multiple individual inputs to a single parameter,
+            # promote output to a collection.
+            inputs = []
+            input_history_content_type = None
+            input_collection_type = None
+            for i, c in enumerate(connections):
+                input_from_connection = self.replacement_for_connection(c, is_data=is_data)
+                is_data = hasattr(input_from_connection, "history_content_type")
+                if is_data:
+                    input_history_content_type = input_from_connection.history_content_type
+                    if i == 0:
+                        if input_history_content_type == "dataset_collection":
+                            input_collection_type = input_from_connection.collection.collection_type
+                        else:
+                            input_collection_type = None
+                    else:
+                        if input_collection_type is None:
+                            if input_history_content_type != "dataset":
+                                raise Exception("Cannot map over a combination of datasets and collections.")
+                        else:
+                            if input_history_content_type != "dataset_collection":
+                                raise Exception("Cannot merge over combinations of datasets and collections.")
+                            elif input_from_connection.collection.collection_type != input_collection_type:
+                                raise Exception("Cannot merge collections of different collection types.")
+
+                inputs.append(input_from_connection)
+
+            if input_dict["input_type"] == "dataset_collection":
+                # TODO: Implement more nested types here...
+                if input_dict.get("collection_types") != ["list"]:
+                    return self.replacement_for_connection(connections[0], is_data=is_data)
+
+            collection = model.DatasetCollection()
+            # If individual datasets provided (type is None) - premote to a list.
+            collection.collection_type = input_collection_type or "list"
+
+            next_index = 0
+            if input_collection_type is None:
+
+                if merge_type == "merge_nested":
+                    raise NotImplementedError()
+
+                for input in inputs:
+                    model.DatasetCollectionElement(
+                        collection=collection,
+                        element=input,
+                        element_index=next_index,
+                        element_identifier=str(next_index),
+                    )
+                    next_index += 1
+
+            elif input_collection_type == "list":
+                if merge_type == "merge_flattened":
+                    for input in inputs:
+                        for dataset_instance in input.dataset_instances:
+                            model.DatasetCollectionElement(
+                                collection=collection,
+                                element=dataset_instance,
+                                element_index=next_index,
+                                element_identifier=str(next_index),
+                            )
+                            next_index += 1
+                elif merge_type == "merge_nested":
+                    # Increase nested level of collection
+                    collection.collection_type = "list:%s" % input_collection_type
+                    for input in inputs:
+                        model.DatasetCollectionElement(
+                            collection=collection,
+                            element=input.collection,
+                            element_index=next_index,
+                            element_identifier=str(next_index),
+                        )
+                        next_index += 1
+            else:
+                raise NotImplementedError()
+
+            ephemeral_collection = modules.EphemeralCollection(
+                collection=collection,
+                history=self.workflow_invocation.history,
+            )
+            replacement = ephemeral_collection.persistent_object
+
+        return replacement
+
     def replacement_for_input(self, step, input_dict):
         replacement = modules.NO_REPLACEMENT
         prefixed_name = input_dict["name"]
@@ -334,8 +440,9 @@ class WorkflowProgress:
                     if isinstance(replacement[0], model.HistoryDatasetCollectionAssociation):
                         replacement = replacement[0]
             else:
-                is_data = input_dict["input_type"] in ["dataset", "dataset_collection"]
-                replacement = self.replacement_for_connection(connection[0], is_data=is_data)
+                replacement = self.replacement_for_input_connections(
+                    step, input_dict, connection,
+                )
 
         return replacement
 
@@ -369,24 +476,24 @@ class WorkflowProgress:
                 delayed_why = "dependent collection [%s] not yet populated with datasets" % replacement.id
                 raise modules.DelayedWorkflowEvaluation(why=delayed_why)
 
-        data_inputs = (model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation, model.DatasetCollection)
-        if not is_data and isinstance(replacement, data_inputs):
-            if isinstance(replacement, model.HistoryDatasetAssociation):
-                if replacement.is_pending:
-                    raise modules.DelayedWorkflowEvaluation()
-                if not replacement.is_ok:
-                    raise modules.CancelWorkflowEvaluation()
+        is_hda = isinstance(replacement, model.HistoryDatasetAssociation)
+        is_hdca = isinstance(replacement, (model.HistoryDatasetCollectionAssociation, model.DatasetCollection))
+        if not is_data and (is_hda or is_hdca):
+            dataset_instances = []
+            if is_hda:
+                dataset_instances = [replacement]
             else:
-                if not replacement.collection.populated:
-                    raise modules.DelayedWorkflowEvaluation()
-                pending = False
-                for dataset_instance in replacement.dataset_instances:
-                    if dataset_instance.is_pending:
-                        pending = True
-                    elif not dataset_instance.is_ok:
-                        raise modules.CancelWorkflowEvaluation()
-                if pending:
-                    raise modules.DelayedWorkflowEvaluation()
+                dataset_instances = replacement.dataset_instances
+
+            pending = False
+            for dataset_instance in dataset_instances:
+                if dataset_instance.is_pending:
+                    pending = True
+                elif not dataset_instance.is_ok:
+                    raise modules.CancelWorkflowEvaluation()
+
+            if pending:
+                raise modules.DelayedWorkflowEvaluation()
 
         return replacement
 
@@ -399,6 +506,39 @@ class WorkflowProgress:
             raise modules.DelayedWorkflowEvaluation(why=delayed_why)
         else:
             return step_outputs[output_name]
+
+    def raw_to_galaxy(self, as_dict_value):
+        trans = self.trans
+        app = trans.app
+        history = self.workflow_invocation.history
+
+        relative_to = "/"  # TODO
+        path = abs_path(as_dict_value.get("location"), relative_to)
+
+        name = os.path.basename(path)
+        primary_data = model.HistoryDatasetAssociation(
+            name=name,
+            extension="data",  # TODO: cwl default...
+            designation=None,
+            visible=True,
+            dbkey="?",
+            create_dataset=True,
+            flush=False,
+            sa_session=trans.sa_session
+        )
+        log.info("path is %s" % path)
+        primary_data.link_to(path)
+        permissions = app.security_agent.history_get_default_permissions(history)
+        app.security_agent.set_all_dataset_permissions(primary_data.dataset, permissions, new=True, flush=False)
+        trans.sa_session.add(primary_data)
+        trans.sa_session.flush()
+        history.add_dataset(primary_data)
+        primary_data.init_meta()
+        primary_data.set_meta()
+        primary_data.set_peek()
+        primary_data.raw_set_dataset_state('ok')
+        trans.sa_session.flush()
+        return primary_data
 
     def set_outputs_for_input(self, invocation_step, outputs=None, already_persisted=False):
         step = invocation_step.workflow_step
@@ -419,6 +559,14 @@ class WorkflowProgress:
             elif step_id in self.inputs_by_step_id:
                 outputs['output'] = self.inputs_by_step_id[step_id]
 
+        output = outputs.get('output')
+        # TODO: handle extra files and directory types and collections and all the stuff...
+        if output and isinstance(output, dict) and output.get("class") == "File":
+            primary_data = self.raw_to_galaxy(output)
+            outputs['output'] = primary_data
+
+        log.info("outputs are")
+        log.info(outputs)
         self.set_step_outputs(invocation_step, outputs, already_persisted=already_persisted)
 
     def set_step_outputs(self, invocation_step, outputs, already_persisted=False):
@@ -471,10 +619,10 @@ class WorkflowProgress:
             raise Exception("Failed to find persisted workflow invocation for step [%s]" % step.id)
         return subworkflow_invocation
 
-    def subworkflow_invoker(self, trans, step, use_cached_job=False):
+    def subworkflow_invoker(self, trans, step, structure, use_cached_job=False):
         subworkflow_invocation = self._subworkflow_invocation(step)
         workflow_run_config = workflow_request_to_run_config(trans, subworkflow_invocation)
-        subworkflow_progress = self.subworkflow_progress(subworkflow_invocation, step, workflow_run_config.param_map)
+        subworkflow_progress = self.subworkflow_progress(subworkflow_invocation, step, workflow_run_config.param_map, structure)
         subworkflow_invocation = subworkflow_progress.workflow_invocation
         return WorkflowInvoker(
             trans,
@@ -483,31 +631,35 @@ class WorkflowProgress:
             progress=subworkflow_progress,
         )
 
-    def subworkflow_progress(self, subworkflow_invocation, step, param_map):
+    def subworkflow_progress(self, subworkflow_invocation, step, param_map, structure):
         subworkflow = subworkflow_invocation.workflow
         subworkflow_inputs = {}
         for input_subworkflow_step in subworkflow.input_steps:
-            connection_found = False
+            subworkflow_step_id = input_subworkflow_step.id
+            connections = []
             for input_connection in step.input_connections:
                 if input_connection.input_subworkflow_step == input_subworkflow_step:
-                    subworkflow_step_id = input_subworkflow_step.id
-                    is_data = input_connection.output_step.type != "parameter_input"
-                    replacement = self.replacement_for_connection(
-                        input_connection,
-                        is_data=is_data,
-                    )
-                    subworkflow_inputs[subworkflow_step_id] = replacement
-                    connection_found = True
-                    break
+                    connections.append(input_connection)
 
-            if not connection_found:
+            if not connections:
                 raise Exception("Could not find connections for all subworkflow inputs.")
+
+            replacement = self.replacement_for_input_connections(
+                step,
+                dict(
+                    name=input_subworkflow_step.label,  # TODO: only module knows this unfortunately
+                    input_type=input_subworkflow_step.input_type,
+                ),
+                connections,
+            )
+            subworkflow_inputs[subworkflow_step_id] = replacement
 
         return WorkflowProgress(
             subworkflow_invocation,
             subworkflow_inputs,
             self.module_injector,
-            param_map=param_map
+            param_map=param_map,
+            workflow_mapping_structure=structure,
         )
 
     def _recover_mapping(self, step_invocation):

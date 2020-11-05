@@ -1,4 +1,3 @@
-# Test tools API.
 import contextlib
 import json
 import os
@@ -69,7 +68,7 @@ class TestsTools:
     def _run_cat(self, history_id, inputs, assert_ok=False, **kwargs):
         return self._run('cat', history_id, inputs, assert_ok=assert_ok, **kwargs)
 
-    def _run(self, tool_id=None, history_id=None, inputs=None, tool_uuid=None, assert_ok=False, tool_version=None, use_cached_job=False, wait_for_job=False, input_format='legacy'):
+    def _run(self, tool_id=None, history_id=None, inputs=None, tool_uuid=None, assert_ok=False, tool_version=None, use_cached_job=False, wait_for_job=False, input_format='legacy', inputs_representation=None):
         if inputs is None:
             inputs = {}
         if tool_id is None:
@@ -79,6 +78,7 @@ class TestsTools:
             inputs=inputs,
             history_id=history_id,
             input_format=input_format,
+            inputs_representation=inputs_representation,
         )
         if tool_uuid:
             payload['tool_uuid'] = tool_uuid
@@ -99,6 +99,7 @@ class TestsTools:
 
 
 class ToolsTestCase(ApiTestCase, TestsTools):
+    """Test the Galaxy Tool API."""
 
     def setUp(self):
         super().setUp()

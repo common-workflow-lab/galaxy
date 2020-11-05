@@ -200,3 +200,7 @@ class MockJobWrapper:
 
     def get_output_fnames(self):
         return ["output1"]
+
+    @property
+    def is_cwl_job(self):
+        return False

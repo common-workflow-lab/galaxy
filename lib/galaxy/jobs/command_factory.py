@@ -11,12 +11,22 @@ from galaxy.jobs.runners.util.job_script import (
     INTEGRITY_INJECTION,
     write_script,
 )
+from galaxy.util import bunch
 
 log = getLogger(__name__)
 
 CAPTURE_RETURN_CODE = "return_code=$?"
 YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
 SETUP_GALAXY_FOR_METADATA = """
+if [ "$GALAXY_LIB" != "None" ]; then
+    if [ -n "$PYTHONPATH" ]; then
+        PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"
+    else
+        PYTHONPATH="$GALAXY_LIB"
+    fi
+    export PYTHONPATH
+fi
+PATH="$_GALAXY_PATH"
 [ "$GALAXY_VIRTUAL_ENV" = "None" ] && GALAXY_VIRTUAL_ENV="$_GALAXY_VIRTUAL_ENV"; _galaxy_setup_environment True
 """
 PREPARE_DIRS = """mkdir -p working outputs configs
@@ -86,19 +96,26 @@ def build_command(
             external_command_shell = container.shell
         else:
             external_command_shell = shell
-        externalized_commands = __externalize_commands(job_wrapper, external_command_shell, commands_builder, remote_command_params, container=container)
         if container and modify_command_for_container:
-            # Stop now and build command before handling metadata and copying
-            # working directory files back. These should always happen outside
-            # of docker container - no security implications when generating
-            # metadata and means no need for Galaxy to be available to container
-            # and not copying workdir outputs back means on can be more restrictive
-            # of where container can write to in some circumstances.
-            run_in_container_command = container.containerize_command(
-                externalized_commands
-            )
+            if not job_wrapper.tool.may_use_container_entry_point:
+                externalized_commands = __externalize_commands(job_wrapper, external_command_shell, commands_builder, remote_command_params, container=container)
+                # Stop now and build command before handling metadata and copying
+                # working directory files back. These should always happen outside
+                # of docker container - no security implications when generating
+                # metadata and means no need for Galaxy to be available to container
+                # and not copying workdir outputs back means on can be more restrictive
+                # of where container can write to in some circumstances.
+                run_in_container_command = container.containerize_command(
+                    externalized_commands
+                )
+            else:
+                tool_commands = commands_builder.build()
+                run_in_container_command = container.containerize_command(
+                    tool_commands
+                )
             commands_builder = CommandsBuilder(run_in_container_command)
         else:
+            externalized_commands = __externalize_commands(job_wrapper, external_command_shell, commands_builder, remote_command_params, container=container)
             commands_builder = CommandsBuilder(externalized_commands)
 
     # Don't need to create a separate tool working directory for Pulsar
@@ -109,7 +126,13 @@ def build_command(
 
         # Copy working and outputs before job submission so that these can be restored on resubmission
         # xref https://github.com/galaxyproject/galaxy/issues/3289
-        commands_builder.prepend_command(PREPARE_DIRS)
+        if not job_wrapper.is_cwl_job:
+            commands_builder.prepend_command(PREPARE_DIRS)
+        else:
+            # Can't do the rm -rf working for CWL jobs since we may have staged outputs
+            # into that directory. This does mean CWL is incompatible with job manager triggered
+            # retries - what can we do with that information?
+            commands_builder.prepend_command("mkdir -p outputs; cd working")
 
     container_monitor_command = job_wrapper.container_monitor_command(container)
     if container_monitor_command:
@@ -203,6 +226,11 @@ def __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_comm
     work_dir_outputs = runner.get_work_dir_outputs(job_wrapper, **work_dir_outputs_kwds)
     if work_dir_outputs:
         commands_builder.capture_return_code()
+        if job_wrapper.is_cwl_job:
+            metadata_script_file = join(job_wrapper.working_directory, "relocate_dynamic_outputs.py")
+            relocate_contents = 'from galaxy_ext.cwl.handle_outputs import relocate_dynamic_outputs; relocate_dynamic_outputs()'
+            write_script(metadata_script_file, relocate_contents, bunch.Bunch(check_job_script_integrity=False))
+            commands_builder.append_command("python %s" % metadata_script_file)
         copy_commands = map(__copy_if_exists_command, work_dir_outputs)
         commands_builder.append_commands(copy_commands)
 
@@ -235,11 +263,19 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
         kwds={'overwrite': False}
     ) or ''
     metadata_command = metadata_command.strip()
-    if metadata_command:
+    if metadata_command or job_wrapper.is_cwl_job:
+        command = SETUP_GALAXY_FOR_METADATA
+        if job_wrapper.is_cwl_job:
+            relocate_script_file = join(job_wrapper.working_directory, "relocate_dynamic_outputs.py")
+            relocate_contents = 'from galaxy_ext.cwl.handle_outputs import relocate_dynamic_outputs; relocate_dynamic_outputs()'
+            write_script(relocate_script_file, relocate_contents, bunch.Bunch(check_job_script_integrity=False))
+            command += f"\ncd working; python {relocate_script_file}; cd {job_wrapper.working_directory}"
+
         # Place Galaxy and its dependencies in environment for metadata regardless of tool.
-        metadata_command = f"{SETUP_GALAXY_FOR_METADATA}{metadata_command}"
+        if metadata_command:
+            command += f"\n{metadata_command}"
         commands_builder.capture_return_code()
-        commands_builder.append_command(metadata_command)
+        commands_builder.append_command(command)
 
 
 def __copy_if_exists_command(work_dir_output):

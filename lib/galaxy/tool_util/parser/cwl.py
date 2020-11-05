@@ -1,8 +1,7 @@
 import logging
-import os
 from collections import OrderedDict
 
-from galaxy.tool_util.cwl.parser import tool_proxy
+from galaxy.tool_util.cwl.parser import tool_proxy, tool_proxy_from_persistent_representation
 from galaxy.tool_util.deps import requirements
 from .interface import (
     PageSource,
@@ -10,24 +9,30 @@ from .interface import (
     ToolSource,
 )
 from .output_actions import ToolOutputActionGroup
+from .output_collection_def import dataset_collector_descriptions_from_list
 from .output_objects import ToolOutput
+from .output_objects import ToolOutputCollection
+from .output_objects import ToolOutputCollectionStructure
 from .stdio import (
     StdioErrorLevel,
     ToolStdioExitCode,
 )
 from .yaml import YamlInputSource
 
+CWL_DEFAULT_FILE_OUTPUT = "data"  # set to _sniff_ to sniff output types automatically.
+
 log = logging.getLogger(__name__)
 
 
 class CwlToolSource(ToolSource):
 
-    def __init__(self, tool_file, strict_cwl_validation=True):
-        self._cwl_tool_file = tool_file
-        self._id, _ = os.path.splitext(os.path.basename(tool_file))
-        self._tool_proxy = None
+    def __init__(self, tool_file=None, tool_object=None, strict_cwl_validation=True, tool_directory=None, uuid=None):
         self._source_path = tool_file
+        self._source_object = tool_object
+        self._tool_proxy = None
         self._strict_cwl_validation = strict_cwl_validation
+        self._tool_directory = tool_directory
+        self._uuid = uuid
 
     @property
     def source_path(self):
@@ -36,14 +41,21 @@ class CwlToolSource(ToolSource):
     @property
     def tool_proxy(self):
         if self._tool_proxy is None:
-            self._tool_proxy = tool_proxy(self._source_path, strict_cwl_validation=self._strict_cwl_validation)
+            if self._source_path is not None:
+                self._tool_proxy = tool_proxy(self._source_path, strict_cwl_validation=self._strict_cwl_validation, tool_directory=self._tool_directory, uuid=self._uuid)
+            else:
+                if "pickle" not in self._source_object:
+                    self._tool_proxy = tool_proxy(tool_object=self._source_object, strict_cwl_validation=self._strict_cwl_validation, tool_directory=self._tool_directory, uuid=self._uuid)
+                else:
+                    assert 'uuid' in self._source_object
+                    self._tool_proxy = tool_proxy_from_persistent_representation(self._source_object, strict_cwl_validation=self._strict_cwl_validation, tool_directory=self._tool_directory)
         return self._tool_proxy
 
     def parse_tool_type(self):
         return 'cwl'
 
     def parse_id(self):
-        return self._id
+        return self.tool_proxy.galaxy_id()
 
     def parse_name(self):
         return self.tool_proxy.label() or self.parse_id()
@@ -84,16 +96,36 @@ class CwlToolSource(ToolSource):
 
     def parse_stdio(self):
         # TODO: remove duplication with YAML
-        # New format - starting out just using exit code.
-        exit_code_lower = ToolStdioExitCode()
-        exit_code_lower.range_start = float("-inf")
-        exit_code_lower.range_end = -1
-        exit_code_lower.error_level = StdioErrorLevel.FATAL
-        exit_code_high = ToolStdioExitCode()
-        exit_code_high.range_start = 1
-        exit_code_high.range_end = float("inf")
-        exit_code_lower.error_level = StdioErrorLevel.FATAL
-        return [exit_code_lower, exit_code_high], []
+        exit_codes = []
+
+        success_codes = sorted(set(self.tool_proxy._tool.tool.get("successCodes") or [0]))
+
+        last_success_code = None
+
+        for success_code in success_codes:
+            if last_success_code is not None and success_code == last_success_code + 1:
+                last_success_code = success_code
+                continue
+
+            exit_code = ToolStdioExitCode()
+            range_start = float("-inf")
+            if last_success_code is not None:
+                range_start = last_success_code + 1
+
+            exit_code.range_start = range_start
+            exit_code.range_end = success_code - 1
+            exit_code.error_level = StdioErrorLevel.FATAL
+            exit_codes.append(exit_code)
+
+            last_success_code = success_code
+
+        exit_code = ToolStdioExitCode()
+        exit_code.range_start = last_success_code + 1
+        exit_code.range_end = float("inf")
+        exit_code.error_level = StdioErrorLevel.FATAL
+        exit_codes.append(exit_code)
+
+        return exit_codes, []
 
     def parse_interpreter(self):
         return None
@@ -114,20 +146,37 @@ class CwlToolSource(ToolSource):
     def parse_outputs(self, tool):
         output_instances = self.tool_proxy.output_instances()
         outputs = OrderedDict()
+        output_collections = OrderedDict()
         output_defs = []
         for output_instance in output_instances:
             output_defs.append(self._parse_output(tool, output_instance))
+
         # TODO: parse outputs collections
         for output_def in output_defs:
-            outputs[output_def.name] = output_def
-        return outputs, OrderedDict()
+            if isinstance(output_def, ToolOutput):
+                outputs[output_def.name] = output_def
+            else:
+                outputs[output_def.name] = output_def
+                output_collections[output_def.name] = output_def
+        return outputs, output_collections
 
     def _parse_output(self, tool, output_instance):
+        output_type = output_instance.output_data_type
+        if isinstance(output_type, dict) and output_type.get("type") == "record":
+            return self._parse_output_record(tool, output_instance)
+        elif isinstance(output_type, dict) and output_type.get("type") == "array":
+            return self._parse_output_array(tool, output_instance)
+        else:
+            return self._parse_output_data(tool, output_instance)
+
+    def _parse_output_data(self, tool, output_instance):
         name = output_instance.name
         # TODO: handle filters, actions, change_format
         output = ToolOutput(name)
         if "File" in output_instance.output_data_type:
-            output.format = "_sniff_"
+            output.format = CWL_DEFAULT_FILE_OUTPUT
+        elif "Directory" in output_instance.output_data_type:
+            output.format = "directory"
         else:
             output.format = "expression.json"
         output.change_format = []
@@ -143,6 +192,35 @@ class CwlToolSource(ToolSource):
         output.actions = ToolOutputActionGroup(output, None)
         return output
 
+    def _parse_output_record(self, tool, output_instance):
+        name = output_instance.name
+        # TODO: clean output bindings and other non-structure information
+        # from this.
+        fields = output_instance.output_data_type.get("fields")
+        output_collection = ToolOutputCollection(
+            name,
+            ToolOutputCollectionStructure(
+                collection_type="record",
+                fields=fields,
+            ),
+        )
+        return output_collection
+
+    def _parse_output_array(self, tool, output_instance):
+        name = output_instance.name
+        # TODO: Handle nested arrays and such...
+        dataset_collector_descriptions = dataset_collector_descriptions_from_list(
+            [{"from_provided_metadata": True}],
+        )
+        output_collection = ToolOutputCollection(
+            name,
+            ToolOutputCollectionStructure(
+                collection_type="list",
+                dataset_collector_descriptions=dataset_collector_descriptions,
+            ),
+        )
+        return output_collection
+
     def parse_requirements_and_containers(self):
         containers = []
         docker_identifier = self.tool_proxy.docker_identifier()
@@ -157,7 +235,21 @@ class CwlToolSource(ToolSource):
         ))
 
     def parse_profile(self):
-        return "16.04"
+        return "17.09"
+
+    def parse_xrefs(self):
+        return []
+
+    def parse_provided_metadata_style(self):
+        return "default"
+
+    def parse_cores_min(self):
+        for h in self.tool_proxy.hints_or_requirements_of_class("ResourceRequirement"):
+            cores_min = h.get("coresMin")
+            if cores_min:
+                return cores_min
+
+        return 1
 
     def parse_license(self):
         return None
