@@ -7879,6 +7879,9 @@ class WorkflowStepInput(Base, RepresentById):
         primaryjoin=(lambda: WorkflowStepConnection.input_step_input_id == WorkflowStepInput.id),
     )
 
+    default_merge_type = "merge_flattened"
+    default_scatter_type = "dotproduct"
+
     def __init__(self, workflow_step):
         add_object_to_object_session(self, workflow_step)
         self.workflow_step = workflow_step
@@ -7950,6 +7953,11 @@ class WorkflowStepConnection(Base, RepresentById):
         copied_connection = WorkflowStepConnection()
         copied_connection.output_name = self.output_name
         return copied_connection
+
+    def log_str(self):
+        return "WorkflowStepConnection[output_step_id={},output_name={},input_step_id={},input_name={}]".format(
+            self.output_step_id, self.output_name, self.input_step_id, self.input_name
+        )
 
 
 class WorkflowOutput(Base, Serializable):
@@ -8739,6 +8747,8 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         return self.state == self.states.NEW
 
     def add_output(self, output_name, output_object):
+        if getattr(output_object, "ephemeral", False):
+            return
         if output_object.history_content_type == "dataset":
             output_assoc = WorkflowInvocationStepOutputDatasetAssociation()
             output_assoc.workflow_invocation_step = self
