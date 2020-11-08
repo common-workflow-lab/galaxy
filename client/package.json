@@ -37,7 +37,7 @@
     "handsontable": "^2.0.0",
     "imask": "^6.0.5",
     "isotope-layout": "^3.0.6",
-    "jquery": "2",
+    "jquery": "3",
     "jquery-migrate": "~1.4",
     "jquery-mousewheel": "^3.1.13",
     "jquery-ui": "^1.12.1",
