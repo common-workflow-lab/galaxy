@@ -361,9 +361,9 @@ class WorkflowModule:
 
             step_input = step.inputs_by_name.get(name, None)
             scatter_type = "dotproduct"
-            if step_input:
+            if step_input and step_input.scatter_type:
                 scatter_type = step_input.scatter_type
-            assert scatter_type in ["dotproduct", "disabled"], "Unimplemented scatter type [%s]" % scatter_type
+                assert scatter_type in ["dotproduct", "disabled"], f"Unimplemented scatter type [{scatter_type}]"
 
             workflow_mapping_structure = progress.workflow_mapping_structure
             if workflow_mapping_structure and workflow_mapping_structure.is_leaf and scatter_type == "disabled":
