@@ -409,10 +409,13 @@ class WorkflowProgress:
         try:
             replacement = step_outputs[output_name]
         except KeyError:
-            # Must resolve.
-            template = "Workflow evaluation problem - failed to find output_name %s in step_outputs %s"
-            message = template % (output_name, step_outputs)
-            raise Exception(message)
+            if connection.non_data_connection:
+                replacement = modules.NO_REPLACEMENT
+            else:
+                # If this not a implicit connection (the state of which is checked before in `check_implicitly_dependent_steps`)
+                # we must resolve this.
+                message = f"Workflow evaluation problem - failed to find output_name '{output_name}' in step_outputs {step_outputs}"
+                raise Exception(message)
         if isinstance(replacement, model.HistoryDatasetCollectionAssociation):
             if not replacement.collection.populated:
                 if not replacement.waiting_for_elements:
