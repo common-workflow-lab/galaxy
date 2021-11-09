@@ -314,7 +314,7 @@ class CwlWorkflowRun(CwlRun):
         self.invocation_id = invocation_id
 
     def _output_name_to_object(self, output_name):
-        invocation_response = self.dataset_populator._get(f"workflows/{self.invocation_id}/invocations/{self.workflow_id}")
+        invocation_response = self.dataset_populator._get(f"workflows/{self.workflow_id}/invocations/{self.invocation_id}")
         api_asserts.assert_status_code_is(invocation_response, 200)
         invocation = invocation_response.json()
         return invocation_to_output(invocation, self.history_id, output_name)
