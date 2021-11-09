@@ -1779,6 +1779,12 @@ export interface components {
              */
             element_identifiers?: components["schemas"]["CollectionElementIdentifier"][];
             /**
+             * Fields
+             * @description List of fields to create for this collection. Set to 'auto' to guess fields from identifiers.
+             * @default []
+             */
+            fields?: string | components["schemas"]["FieldDict"][];
+            /**
              * Folder Id
              * @description The ID of the library folder that will contain the collection. Required if `instance_type=library`.
              * @example [
@@ -1951,6 +1957,12 @@ export interface components {
              * @description List of elements that should be in the new collection.
              */
             element_identifiers?: components["schemas"]["CollectionElementIdentifier"][];
+            /**
+             * Fields
+             * @description List of fields to create for this collection. Set to 'auto' to guess fields from identifiers.
+             * @default []
+             */
+            fields?: string | components["schemas"]["FieldDict"][];
             /**
              * Folder Id
              * @description The ID of the library folder that will contain the collection. Required if `instance_type=library`.
@@ -2903,6 +2915,13 @@ export interface components {
                 | components["schemas"]["HdcaDataItemsFromTarget"]
                 | components["schemas"]["FtpImportTarget"]
             )[];
+        };
+        /** FieldDict */
+        FieldDict: {
+            /** Name */
+            name: string;
+            /** Type */
+            type: string;
         };
         /**
          * FileDataElement
