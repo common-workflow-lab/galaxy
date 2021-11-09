@@ -11,7 +11,7 @@ class RecordDatasetCollectionType(BaseDatasetCollectionType):
     def generate_elements(self, elements, **kwds):
         fields = kwds.get("fields", None)
         if fields is None:
-            raise RequestParameterMissingException("Missing or null parameter fields required for record types.")
+            raise RequestParameterMissingException("Missing or null parameter 'fields' required for record types.")
         if len(elements) != len(fields):
             self._validation_failed("Supplied element do not match fields.")
         index = 0

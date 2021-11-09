@@ -9,6 +9,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    TypedDict,
     Union,
 )
 
@@ -964,6 +965,11 @@ class CollectionElementIdentifier(Model):
 CollectionElementIdentifier.update_forward_refs()
 
 
+class FieldDict(TypedDict):
+    name: str
+    type: str
+
+
 class CreateNewCollectionPayload(Model):
     collection_type: CollectionType = CollectionTypeField
     element_identifiers: List[CollectionElementIdentifier] = Field(
@@ -998,6 +1004,10 @@ class CreateNewCollectionPayload(Model):
     folder_id: Optional[EncodedDatabaseIdField] = Field(
         default=None,
         description="The ID of the history that will contain the collection. Required if `instance_type=library`.",
+    )
+    fields: Union[str, Optional[List[FieldDict]]] = Field(
+        default=[],
+        description="List of fields to create for this collection. Set to 'auto' to guess fields from identifiers."
     )
 
 
