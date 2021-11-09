@@ -440,6 +440,9 @@ class CwlPopulator:
                 workflow_id=workflow_id,
                 inputs=json.dumps(job_as_dict),
                 inputs_by="name",
+                # TODO: rework tool state corrections so more of these are valid in Galaxy
+                # workflows as well, and then make it the default. Or decide they are safe.
+                allow_tool_state_corrections=True,
             )
             url = "workflows/%s/invocations" % workflow_id
             invocation_response = self.dataset_populator._post(url, data=workflow_request)

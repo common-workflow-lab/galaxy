@@ -2235,8 +2235,6 @@ def populate_module_and_state(trans, workflow, param_map, allow_tool_state_corre
     for step in workflow.steps:
         step_args = param_map.get(step.id, {})
         step_errors = module_injector.inject(step, step_args=step_args)
-        # RESTRICT TO THIS JUST TO CONNECTIONS
-        step.upgrade_messages = []
         if step_errors:
             raise exceptions.MessageException(step_errors, err_data={step.order_index: step_errors})
         if step.upgrade_messages:
