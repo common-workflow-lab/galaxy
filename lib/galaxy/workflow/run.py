@@ -370,7 +370,7 @@ class WorkflowProgress:
                 collection=collection,
                 history=self.workflow_invocation.history,
             )
-            replacement = ephemeral_collection.persistent_object
+            replacement = ephemeral_collection
 
         return replacement
 
