@@ -355,10 +355,6 @@ class WorkflowModule:
         for input_dict in all_inputs:
             name = input_dict["name"]
 
-            multiple = input_dict["multiple"]
-            if multiple:
-                continue
-
             step_input = step.inputs_by_name.get(name, None)
             scatter_type = "dotproduct"
             if step_input and step_input.scatter_type:
