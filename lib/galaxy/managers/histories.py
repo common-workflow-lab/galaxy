@@ -527,7 +527,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
         #   so this is rel. ineff. - if we keep this...
         hda_state_counts = self.serialize_state_counts(history, 'counts', exclude_deleted=True, **context)
         num_hdas = sum(hda_state_counts.values())
-        if num_hdas == 0:
+        if history.empty:
             state = states.NEW
 
         else:
