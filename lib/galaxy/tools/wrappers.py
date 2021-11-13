@@ -67,7 +67,7 @@ class ToolParameterValueWrapper:
     Base class for object that Wraps a Tool Parameter and Value.
     """
 
-    value: Union[str, List[str]]
+    value: Union[None, str, List[str], Dict[str, str]]
     input: "ToolParameter"
 
     def __bool__(self) -> bool:
@@ -118,10 +118,12 @@ class InputValueWrapper(ToolParameterValueWrapper):
     Wraps an input so that __str__ gives the "param_dict" representation.
     """
 
+    value: Optional[Dict[str, str]]
+
     def __init__(
         self,
         input: "ToolParameter",
-        value: str,
+        value: Dict[str, str],
         other_values: Optional[Dict[str, str]] = None,
     ) -> None:
         self.input = input
@@ -190,6 +192,7 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
     """
 
     input: "SelectToolParameter"
+    value: Union[str, List[str]]
 
     class SelectToolParameterFieldWrapper:
         """
@@ -660,9 +663,9 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         self.collection = collection
 
         elements = collection.elements
-        element_instances = {}
+        element_instances: Dict[str, Union[DatasetCollectionWrapper, DatasetFilenameWrapper]] = {}
 
-        element_instance_list = []
+        element_instance_list: List[Union[DatasetCollectionWrapper, DatasetFilenameWrapper]] = []
         for dataset_collection_element in elements:
             element_object = dataset_collection_element.element_object
             element_identifier = dataset_collection_element.element_identifier
