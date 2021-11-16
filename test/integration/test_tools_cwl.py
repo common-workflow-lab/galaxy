@@ -1,21 +1,28 @@
 """Test CWL Tool Execution via the API."""
 
+import unittest
 from sys import platform as _platform
 
 from galaxy.tool_util.cwl.representation import USE_FIELD_TYPES
-from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.populators import (
     CwlPopulator,
     DatasetPopulator,
     WorkflowPopulator,
 )
 from galaxy_test.base.populators import skip_without_tool
+from galaxy_test.driver import integration_util
+
 
 IS_OS_X = _platform == "darwin"
 
 
-class CwlToolsTestCase(ApiTestCase):
+class CwlToolsTestCase(integration_util.IntegrationInstance, unittest.TestCase):
     """Test CWL Tool Execution via the API."""
+    require_admin_user = True
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["allow_path_paste"] = True
 
     def setUp(self):
         """Setup dataset populator."""
