@@ -1,9 +1,10 @@
 """Test CWL Tool Execution via the API."""
 
-import unittest
+import os
 from sys import platform as _platform
 
 from galaxy.tool_util.cwl.representation import USE_FIELD_TYPES
+from galaxy.util import galaxy_root_path
 from galaxy_test.base.populators import (
     CwlPopulator,
     DatasetPopulator,
@@ -16,7 +17,7 @@ from galaxy_test.driver import integration_util
 IS_OS_X = _platform == "darwin"
 
 
-class CwlToolsTestCase(integration_util.IntegrationInstance, unittest.TestCase):
+class CwlToolsTestCase(integration_util.IntegrationTestCase):
     """Test CWL Tool Execution via the API."""
     require_admin_user = True
 
@@ -120,7 +121,7 @@ class CwlToolsTestCase(integration_util.IntegrationInstance, unittest.TestCase):
                     },
                 ],
             },
-            test_data_directory="test/functional/tools/cwl_tools/v1.0/v1.0/"
+            test_data_directory=os.path.join(galaxy_root_path, "test/functional/tools/cwl_tools/v1.0/v1.0/"),
         )
         output1_content = self.dataset_populator.get_history_dataset_content(run_object.history_id)
         self.assertEqual(output1_content, "16")
@@ -258,7 +259,7 @@ class CwlToolsTestCase(integration_util.IntegrationInstance, unittest.TestCase):
             job={
                 "produce": "do_write",
             },
-            test_data_directory="test/functional/tools/cwl_tools/v1.0_custom"
+            test_data_directory=os.path.join(galaxy_root_path, "test/functional/tools/cwl_tools/v1.0_custom"),
         )
         output_content = self.dataset_populator.get_history_dataset_content(run_object.history_id)
         self.assertEqual(output_content, "bees\n")
@@ -270,7 +271,7 @@ class CwlToolsTestCase(integration_util.IntegrationInstance, unittest.TestCase):
             job={
                 "produce": "dont_write",
             },
-            test_data_directory="test/functional/tools/cwl_tools/v1.0_custom"
+            test_data_directory=os.path.join(galaxy_root_path, "test/functional/tools/cwl_tools/v1.0_custom"),
         )
         output_content = self.dataset_populator.get_history_dataset_content(run_object.history_id)
         self.assertEqual(output_content, "null")
@@ -286,7 +287,7 @@ class CwlToolsTestCase(integration_util.IntegrationInstance, unittest.TestCase):
                     "path": "whale.txt"
                 },
             },
-            test_data_directory="test/functional/tools/cwl_tools/v1.0_custom",
+            test_data_directory=os.path.join(galaxy_root_path, "test/functional/tools/cwl_tools/v1.0_custom"),
         )
         output1 = self.dataset_populator.get_history_dataset_details(run_object.history_id)
         run_object = self.cwl_populator.run_cwl_artifact(
@@ -297,7 +298,7 @@ class CwlToolsTestCase(integration_util.IntegrationInstance, unittest.TestCase):
                     "id": output1["id"],
                 },
             },
-            test_data_directory="test/functional/tools/cwl_tools/v1.0_custom",
+            test_data_directory=os.path.join(galaxy_root_path, "test/functional/tools/cwl_tools/v1.0_custom"),
             history_id=run_object.history_id,
         )
         output1_content = self.dataset_populator.get_history_dataset_content(run_object.history_id)
@@ -308,7 +309,7 @@ class CwlToolsTestCase(integration_util.IntegrationInstance, unittest.TestCase):
         run_object = self.cwl_populator.run_cwl_artifact(
             "any1.cwl",
             job={"bar": 7},
-            test_data_directory="test/functional/tools/cwl_tools/v1.0/v1.0/",
+            test_data_directory=os.path.join(galaxy_root_path, "test/functional/tools/cwl_tools/v1.0/v1.0/"),
         )
         output1_content = self.dataset_populator.get_history_dataset_content(run_object.history_id)
         assert output1_content == '7', output1_content
@@ -318,7 +319,7 @@ class CwlToolsTestCase(integration_util.IntegrationInstance, unittest.TestCase):
         run_object = self.cwl_populator.run_cwl_artifact(
             "any1.cwl",
             job={"bar": "7"},
-            test_data_directory="test/functional/tools/cwl_tools/v1.0/v1.0/",
+            test_data_directory=os.path.join(galaxy_root_path, "test/functional/tools/cwl_tools/v1.0/v1.0/"),
         )
         output1_content = self.dataset_populator.get_history_dataset_content(run_object.history_id)
         assert output1_content == '"7"', output1_content
@@ -331,7 +332,7 @@ class CwlToolsTestCase(integration_util.IntegrationInstance, unittest.TestCase):
                 "class": "File",
                 "location": "whale.txt",
             }},
-            test_data_directory="test/functional/tools/cwl_tools/v1.0/v1.0/",
+            test_data_directory=os.path.join(galaxy_root_path, "test/functional/tools/cwl_tools/v1.0/v1.0/"),
         )
         output1_content = self.dataset_populator.get_history_dataset_content(run_object.history_id)
         self.dataset_populator._summarize_history(run_object.history_id)
@@ -342,7 +343,7 @@ class CwlToolsTestCase(integration_util.IntegrationInstance, unittest.TestCase):
         run_object = self.cwl_populator.run_cwl_artifact(
             "any1.cwl",
             job={"bar": {"Cow": ["Turkey"]}},
-            test_data_directory="test/functional/tools/cwl_tools/v1.0/v1.0/",
+            test_data_directory=os.path.join(galaxy_root_path, "test/functional/tools/cwl_tools/v1.0/v1.0/"),
         )
         output1_content = self.dataset_populator.get_history_dataset_content(run_object.history_id)
         assert output1_content == '{"Cow": ["Turkey"]}', output1_content
