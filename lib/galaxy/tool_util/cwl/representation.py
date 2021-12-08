@@ -151,7 +151,7 @@ def type_descriptions_for_field_types(field_types):
 
 def dataset_wrapper_to_file_json(inputs_dir, dataset_wrapper):
     if dataset_wrapper.ext == "expression.json":
-        with open(dataset_wrapper.file_name) as f:
+        with open(str(dataset_wrapper)) as f:
             return json.load(f)
 
     if dataset_wrapper.ext == "directory":
