@@ -4362,6 +4362,10 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     def has_deferred_data(self):
         return self.get_dataset_state() == Dataset.states.DEFERRED
 
+    @property
+    def cwl_formats(self):
+        return [f"http://edamontology.org/{self.datatype.edam_format}"]
+
     def get_dataset_state(self):
         # self._state is currently only used when setting metadata externally
         # leave setting the state as-is, we'll currently handle this specially in the external metadata code
@@ -5165,6 +5169,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             uuid=(lambda uuid: str(uuid) if uuid else None)(hda.dataset.uuid),
             hid=hda.hid,
             file_ext=hda.ext,
+            cwl_formats=hda.cwl_formats,
             peek=unicodify(hda.display_peek()) if hda.peek and hda.peek != "no peek" else None,
             model_class=self.__class__.__name__,
             name=hda.name,
