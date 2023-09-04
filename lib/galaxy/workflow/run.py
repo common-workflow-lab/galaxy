@@ -448,12 +448,12 @@ class WorkflowProgress:
                     else:
                         if input_collection_type is None:
                             if input_history_content_type != "dataset":
-                                raise Exception("Cannot map over a combination of datasets and collections.")
+                                raise MessageException("Cannot map over a combination of datasets and collections.")
                         else:
                             if input_history_content_type != "dataset_collection":
-                                raise Exception("Cannot merge over combinations of datasets and collections.")
+                                raise MessageException("Cannot merge over combinations of datasets and collections.")
                             elif input_from_connection.collection.collection_type != input_collection_type:
-                                raise Exception("Cannot merge collections of different collection types.")
+                                raise MessageException("Cannot merge collections of different collection types.")
 
                 inputs.append(input_from_connection)
 
@@ -599,7 +599,6 @@ class WorkflowProgress:
         if not is_data and isinstance(
             replacement, (model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation)
         ):
-            dataset_instances = []
             if isinstance(replacement, model.HistoryDatasetAssociation):
                 if replacement.is_pending:
                     raise modules.DelayedWorkflowEvaluation()
@@ -814,13 +813,23 @@ class WorkflowProgress:
         subworkflow = subworkflow_invocation.workflow
         subworkflow_inputs = {}
         for input_subworkflow_step in subworkflow.input_steps:
-            subworkflow_step_id = input_subworkflow_step.id
             connections = []
+            subworkflow_step_id = input_subworkflow_step.id
             for input_connection in step.input_connections:
                 if input_connection.input_subworkflow_step_id == subworkflow_step_id:
                     connections.append(input_connection)
 
-            if not connection_found and not input_subworkflow_step.input_optional:
+            replacement = self.replacement_for_input_connections(
+                step=step,
+                input_dict={
+                    "name": input_subworkflow_step.label,  # TODO: only module knows this unfortunately
+                    "input_type": input_subworkflow_step.input_type,
+                },
+                connections=connections,
+            )
+            subworkflow_inputs[subworkflow_step_id] = replacement
+
+            if not connections and not input_subworkflow_step.input_optional:
                 raise modules.FailWorkflowEvaluation(
                     InvocationFailureOutputNotFound(
                         reason=FailureReason.output_not_found,
@@ -829,16 +838,6 @@ class WorkflowProgress:
                         dependent_workflow_step_id=input_connection.output_step.id,
                     )
                 )
-
-            replacement = self.replacement_for_input_connections(
-                step,
-                dict(
-                    name=input_subworkflow_step.label,  # TODO: only module knows this unfortunately
-                    input_type=input_subworkflow_step.input_type,
-                ),
-                connections,
-            )
-            subworkflow_inputs[subworkflow_step_id] = replacement
 
         return WorkflowProgress(
             subworkflow_invocation,
