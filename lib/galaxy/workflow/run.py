@@ -819,15 +819,16 @@ class WorkflowProgress:
                 if input_connection.input_subworkflow_step_id == subworkflow_step_id:
                     connections.append(input_connection)
 
-            replacement = self.replacement_for_input_connections(
-                step=step,
-                input_dict={
-                    "name": input_subworkflow_step.label,  # TODO: only module knows this unfortunately
-                    "input_type": input_subworkflow_step.input_type,
-                },
-                connections=connections,
-            )
-            subworkflow_inputs[subworkflow_step_id] = replacement
+            if connections:
+                replacement = self.replacement_for_input_connections(
+                    step=step,
+                    input_dict={
+                        "name": input_subworkflow_step.label,  # TODO: only module knows this unfortunately
+                        "input_type": input_subworkflow_step.input_type,
+                    },
+                    connections=connections,
+                )
+                subworkflow_inputs[subworkflow_step_id] = replacement
 
             if not connections and not input_subworkflow_step.input_optional:
                 raise modules.FailWorkflowEvaluation(
