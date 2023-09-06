@@ -64,11 +64,12 @@ class StagingInterface(metaclass=abc.ABCMeta):
             self._handle_job(job)
         return tool_response
 
-    def _fetch_post(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def _fetch_post(self, payload: Dict[str, Any]) -> List[Dict[str, Any]]:
         tool_response = self._post("tools/fetch", payload)
+        job_details = []
         for job in tool_response.get("jobs", []):
-            self._handle_job(job)
-        return tool_response
+            job_details.append(self._handle_job(job))
+        return job_details
 
     @abc.abstractmethod
     def _handle_job(self, job_response):
@@ -291,6 +292,7 @@ class InteractorStaging(StagingInterface):
 
     def _handle_job(self, job_response):
         self.galaxy_interactor.wait_for_job(job_response["id"])
+        return self.galaxy_interactor.get_job_stdio(job_response["id"])
 
     @property
     def use_fetch_api(self):
