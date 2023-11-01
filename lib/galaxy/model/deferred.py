@@ -33,6 +33,7 @@ from galaxy.model.base import transaction
 from galaxy.objectstore import (
     ObjectStore,
     ObjectStorePopulator,
+    persist_extra_files,
 )
 
 log = logging.getLogger(__name__)
@@ -128,7 +129,15 @@ class DatasetInstanceMaterializer:
                     sa_session.commit()
             object_store_populator.set_dataset_object_store_id(materialized_dataset)
             path = self._stream_source(target_source, datatype=dataset_instance.datatype)
+            if dataset_instance.ext == "directory":
+                dataset_instance.datatype.to_directory(path, materialized_dataset.extra_files_path)
+                persist_extra_files(
+                    object_store=object_store,
+                    src_extra_files_path=materialized_dataset.extra_files_path,
+                    primary_data=materialized_dataset,
+                )
             object_store.update_from_file(materialized_dataset, file_name=path)
+
         else:
             transient_path_mapper = self._transient_path_mapper
             assert transient_path_mapper

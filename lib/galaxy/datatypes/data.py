@@ -1211,6 +1211,12 @@ class Directory(Data):
         error, msg, messagetype = False, "", ""
         return (error, msg, messagetype)
 
+    @staticmethod
+    def to_directory(path: str, extra_files_path: str, remove_source: bool = False):
+        compression_utils.CompressedFile(path).extract(extra_files_path)
+        if remove_source:
+            os.remove(path)
+
 
 class GenericAsn1(Text):
     """Class for generic ASN.1 text format"""
