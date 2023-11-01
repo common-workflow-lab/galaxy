@@ -10,6 +10,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -59,6 +60,9 @@ from galaxy.util import (
     shrink_and_unicodify,
     unicodify,
 )
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 DATASET_ID_TOKEN = "DATASET_ID"
 
