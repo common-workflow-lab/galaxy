@@ -139,7 +139,7 @@ def path_or_uri_to_uri(path_or_uri: str) -> str:
 def galactic_job_json(
     job: Dict[str, Any],
     test_data_directory: str,
-    upload_func: Callable[["UploadTarget"], Dict[str, Any]],
+    upload_func: Callable[["UploadTarget"], List[Dict[str, Any]]],
     collection_create_func: Callable[[List[Dict[str, Any]], str], Dict[str, Any]],
     tool_or_workflow: Literal["tool", "workflow"] = "workflow",
 ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
@@ -152,7 +152,7 @@ def galactic_job_json(
     for Galaxy.
     """
 
-    datasets = []
+    datasets: List[Dict[str, Any]] = []
     dataset_collections = []
 
     def response_to_hda(target: UploadTarget, upload_response: List[Dict[str, Any]]) -> Dict[str, str]:

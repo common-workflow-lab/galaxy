@@ -7,6 +7,7 @@ from typing import (
     NamedTuple,
     Optional,
     Union,
+    TYPE_CHECKING,
 )
 
 from sqlalchemy.orm import object_session
@@ -35,6 +36,9 @@ from galaxy.objectstore import (
     ObjectStorePopulator,
     persist_extra_files,
 )
+
+if TYPE_CHECKING:
+    from galaxy.datatypes.data import Directory
 
 log = logging.getLogger(__name__)
 
@@ -130,7 +134,7 @@ class DatasetInstanceMaterializer:
             object_store_populator.set_dataset_object_store_id(materialized_dataset)
             path = self._stream_source(target_source, datatype=dataset_instance.datatype)
             if dataset_instance.ext == "directory":
-                dataset_instance.datatype.to_directory(path, materialized_dataset.extra_files_path)
+                cast("Directory", dataset_instance.datatype).to_directory(path, materialized_dataset.extra_files_path)
                 persist_extra_files(
                     object_store=object_store,
                     src_extra_files_path=materialized_dataset.extra_files_path,
