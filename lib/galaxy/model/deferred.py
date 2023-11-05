@@ -169,7 +169,7 @@ class DatasetInstanceMaterializer:
                 path = self._stream_source(
                     target_source, dataset_instance.datatype, validate_hashes, materialized_dataset_hashes
                 )
-                shutil.move(path, transient_paths.external_filename)
+                shutil.copy(path, transient_paths.external_filename)
                 materialized_dataset.external_filename = transient_paths.external_filename
             except Exception as e:
                 exception_materializing = e
