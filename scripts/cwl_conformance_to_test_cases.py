@@ -32,9 +32,6 @@ ${cwl_test_def}
 
 RED_TESTS = {
     "v1.0": [
-        # required
-        "step_input_default_value_overriden_2nd_step_noexp",
-        "step_input_default_value_overriden_noexp",
         # not required
         "clt_any_input_with_mixed_array_provided",
         "directory_secondaryfiles",
@@ -51,7 +48,6 @@ RED_TESTS = {
         "job_input_secondary_subdirs",
         "job_input_subdir_primary_and_secondary_subdirs",
         "resreq_step_overrides_wf",
-        "step_input_default_value_overriden",
         "step_input_default_value_overriden_2nd_step",
         "valuefrom_wf_step",
         "valuefrom_wf_step_multiple",
@@ -86,8 +82,6 @@ RED_TESTS = {
         "stage_file_array_to_dir",
         "stage_file_array_to_dir_basename",
         "stage_file_array_to_dir_basename_entryname",
-        "step_input_default_value_overriden_2nd_step_noexp",
-        "step_input_default_value_overriden_noexp",
         # not required
         "clt_any_input_with_mixed_array_provided",
         "cwl_requirements_addition",
@@ -120,7 +114,6 @@ RED_TESTS = {
         "stage_array_dirs",
         "stage_null_array",
         "stdin_shorcut",
-        "step_input_default_value_overriden",
         "step_input_default_value_overriden_2nd_step",
         "symlink_to_file_out_of_workdir_illegal",
         "timelimit_expressiontool",
@@ -164,8 +157,6 @@ RED_TESTS = {
         "stage_file_array",
         "stage_file_array_basename",
         "stage_file_array_entryname_overrides",
-        "step_input_default_value_overriden_2nd_step_noexp",
-        "step_input_default_value_overriden_noexp",
         # not required
         "initial_work_dir_for_null_and_arrays",
         "initial_work_dir_for_array_dirs",
@@ -189,16 +180,11 @@ RED_TESTS = {
         "conditionals_multi_scatter_nojs",
         "conditionals_nested_cross_scatter",
         "conditionals_nested_cross_scatter_nojs",
-        "conditionals_non_boolean_fail",
-        "conditionals_non_boolean_fail_nojs",
         "cwl_requirements_addition",
         "cwl_requirements_override_expression",
         "cwl_requirements_override_static",
         "cwloutput_nolimit",
         "direct_optional_nonnull_result_nojs",
-        "direct_optional_null_result",
-        "direct_required",
-        "direct_required_nojs",
         "directory_secondaryfiles",
         "docker_entrypoint",
         "dockeroutputdir",
@@ -239,7 +225,6 @@ RED_TESTS = {
         "scatter_on_scattered_conditional",
         "scatter_on_scattered_conditional_nojs",
         "secondary_files_in_named_records",
-        "step_input_default_value_overriden",
         "step_input_default_value_overriden_2nd_step",
         "storage_float",
         "the_only_non_null_single_true",
