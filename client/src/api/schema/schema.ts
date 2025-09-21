@@ -16028,6 +16028,12 @@ export interface components {
              */
             send_email_notification: boolean;
             /**
+             * Strict
+             * @description Turn on strict validation of the inputs that drops support for some inconsistent legacy behavior.
+             * @default true
+             */
+            strict: boolean;
+            /**
              * tool_id
              * @description TODO
              */
