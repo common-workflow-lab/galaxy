@@ -457,22 +457,28 @@ class CwlRun:
 
 
 class CwlToolRun(CwlRun):
-    def __init__(self, dataset_populator, history_id, run_response):
+    def __init__(self, dataset_populator, history_id: str, tool_request_id: str):
         super().__init__(dataset_populator, history_id)
-        self.run_response = run_response
+        self.tool_request_id = tool_request_id
+
+    @property
+    def tool_request(self):
+        self.dataset_populator.wait_on_tool_request(self.tool_request_id)
+        tool_request = self.dataset_populator.get_tool_request(self.tool_request_id)
+        return tool_request
 
     @property
     def job_id(self):
-        return self.run_response.json()["jobs"][0]["id"]
+        return self.tool_request["jobs"][0]["id"]
 
     def output(self, output_index):
-        return self.run_response.json()["outputs"][output_index]
+        return self.tool_request["outputs"][output_index]
 
     def output_collection(self, output_index):
-        return self.run_response.json()["output_collections"][output_index]
+        return self.tool_request["output_collections"][output_index]
 
     def _output_name_to_object(self, output_name):
-        return tool_response_to_output(self.run_response.json(), self.history_id, output_name)
+        return tool_response_to_output(self.tool_request, self.history_id, output_name)
 
     def wait(self):
         self.dataset_populator.wait_for_job(self.job_id, assert_ok=True)
@@ -1277,13 +1283,15 @@ class BaseDatasetPopulator(BasePopulator):
         payload = self.run_tool_payload(tool_id, inputs, history_id, **kwds)
         return self.tools_post(payload)
 
-    def tool_request_raw(self, tool_id: str, inputs: dict[str, Any], history_id: str, strict: bool = True) -> Response:
+    def tool_request_raw(self, tool_id: str, inputs: dict[str, Any], history_id: str, strict: bool = True, tool_uuid: Optional[str] = None) -> Response:
         payload = {
             "tool_id": tool_id,
             "history_id": history_id,
             "inputs": inputs,
             "strict": strict,
         }
+        if tool_uuid:
+            payload["tool_uuid"] = tool_uuid
         response = self._post("jobs", data=payload, json=True)
         return response
 
@@ -2960,10 +2968,13 @@ class CwlPopulator:
                 galaxy_tool_id = None
                 tool_uuid = dynamic_tool["uuid"]
 
-        run_response = self.dataset_populator.run_tool_raw(galaxy_tool_id, job, history_id, tool_uuid=tool_uuid)
+        tool_request_response = self.dataset_populator.tool_request_raw(
+            galaxy_tool_id, job, history_id, tool_uuid=tool_uuid
+        )
         if assert_ok:
-            run_response.raise_for_status()
-        return CwlToolRun(self.dataset_populator, history_id, run_response)
+            tool_request_response.raise_for_status()
+        tool_request_id = tool_request_response.json()["tool_request_id"]
+        return CwlToolRun(self.dataset_populator, history_id, tool_request_id)
 
     def _run_cwl_workflow_job(
         self,

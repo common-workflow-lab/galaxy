@@ -241,6 +241,16 @@ class TestCwlTools(ApiTestCase):
         output1_content = self.dataset_populator.get_history_dataset_content(run_object.history_id)
         assert "call: 1\n" in output1_content, output1_content
 
+    @skip_without_tool("cwl_int.cwl")
+    def test_cwl_int_simple(self) -> None:
+        run_object = self.cwl_populator.run_cwl_job(
+            "cwl_int.cwl",
+            job={"parameter": 7},
+            test_data_directory="test/functional/tools/cwl_tools/v1.0/v1.0/",
+        )
+        output1_content = self.dataset_populator.get_history_dataset_content(run_object.history_id)
+        assert output1_content == "7", output1_content
+
     @skip_without_tool("any1.cwl")
     def test_any1_0(self) -> None:
         run_object = self.cwl_populator.run_cwl_job(

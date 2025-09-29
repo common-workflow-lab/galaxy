@@ -262,6 +262,7 @@
   <tool file="tool_directory_copy.xml" />
 
   <!-- CWL Testing -->
+  <tool file="parameters/cwl_int.cwl" />
   <tool file="cwl_tools/v1.0/v1.0/cat3-tool.cwl" />
   <tool file="cwl_tools/v1.0/v1.0/env-tool1.cwl" />
   <tool file="cwl_tools/v1.0/v1.0/null-expression1-tool.cwl" />
