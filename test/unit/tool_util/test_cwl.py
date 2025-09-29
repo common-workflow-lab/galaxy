@@ -61,9 +61,29 @@ def test_serialize_deserialize():
     path = _cwl_tool_path("v1.0/v1.0/cat5-tool.cwl")
     tool = tool_proxy(path)
     expected_uuid = tool.uuid
+    assert tool.tool_id is None
     rep = tool.to_persistent_representation()
     tool = tool_proxy_from_persistent_representation(rep)
     assert tool.uuid == expected_uuid
+    assert tool.tool_id == "cat5-tool.cwl", tool.tool_id
+    tool.job_proxy({"file1": "/moo"}, {})
+    with open(path) as f:
+        tool_object = yaml.safe_load(f)
+    tool_object = json.loads(json.dumps(tool_object))
+    tool = _to_cwl_tool_object(tool_object=tool_object, uuid=expected_uuid)
+    assert tool.uuid == expected_uuid
+
+
+def test_serialize_deserialize_tool_with_id():
+    path = _cwl_tool_path("v1.0/v1.0/cat5-tool.cwl")
+    tool_uuid = uuid4()
+    tool = tool_proxy(path, tool_id="test_id", uuid=tool_uuid)
+    expected_uuid = str(tool_uuid)
+    assert tool.tool_id == "test_id"
+    rep = tool.to_persistent_representation()
+    tool = tool_proxy_from_persistent_representation(rep)
+    assert tool.uuid == expected_uuid
+    assert tool.tool_id == "test_id"
     tool.job_proxy({"file1": "/moo"}, {})
     with open(path) as f:
         tool_object = yaml.safe_load(f)

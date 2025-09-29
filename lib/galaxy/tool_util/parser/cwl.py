@@ -77,6 +77,7 @@ class CwlToolSource(ToolSource):
         tool_object: Optional[Dict[str, Any]] = None,
         strict_cwl_validation: bool = True,
         tool_directory: Optional[str] = None,
+        tool_id: Optional[str] = None,
         uuid: Optional[Union[UUID, str]] = None,
         tool_proxy: Optional["ToolProxy"] = None,
     ):
@@ -84,6 +85,7 @@ class CwlToolSource(ToolSource):
         self._source_object = tool_object
         self._strict_cwl_validation = strict_cwl_validation
         self._tool_directory = tool_directory
+        self._tool_id = tool_id
         self._uuid = uuid
         self._tool_proxy = tool_proxy
 
@@ -99,6 +101,7 @@ class CwlToolSource(ToolSource):
                     self._source_path,
                     strict_cwl_validation=self._strict_cwl_validation,
                     tool_directory=self._tool_directory,
+                    tool_id=self._tool_id,
                     uuid=self._uuid,
                 )
             else:
@@ -125,7 +128,7 @@ class CwlToolSource(ToolSource):
             return "cwl"
 
     def parse_id(self):
-        return self.tool_proxy.galaxy_id()
+        return self._tool_id or self.tool_proxy.galaxy_id()
 
     def parse_name(self):
         return self.tool_proxy.label() or self.parse_id()
@@ -339,7 +342,8 @@ class CwlToolSource(ToolSource):
         return packaging.version.Version("3.5")
 
     def to_string(self):
-        return json.dumps(self.tool_proxy.to_persistent_representation())
+        persistent_rep = self.tool_proxy.to_persistent_representation()
+        return json.dumps(persistent_rep)
 
 
 class CwlInputSource(YamlInputSource):

@@ -275,9 +275,14 @@ class JobsService(ServiceBase):
             tool_dir=tool.tool_dir,
             tool_source_class=type(tool.tool_source).__name__,
         )
+        tool_uuid = None
+        if tool.dynamic_tool:
+            tool_uuid = tool.dynamic_tool.uuid
         task_request = QueueJobs(
             user=trans.async_request_user,
             history_id=target_history and target_history.id,
+            tool_id=tool.id,
+            tool_uuid=tool_uuid,
             tool_source=tool_source,
             tool_request_id=tool_request_id,
             use_cached_jobs=job_request.use_cached_jobs or False,

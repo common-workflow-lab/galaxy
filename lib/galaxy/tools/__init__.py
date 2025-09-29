@@ -448,9 +448,16 @@ def create_tool_from_source(app, tool_source: ToolSource, config_file: Optional[
 
 
 def create_tool_from_representation(
-    app, raw_tool_source: str, tool_dir: Optional[StrPath] = None, tool_source_class="XmlToolSource"
+    app,
+    raw_tool_source: str,
+    tool_dir: Optional[StrPath] = None,
+    tool_source_class="XmlToolSource",
+    tool_id: Optional[str] = None,
+    tool_uuid: Optional[Union[UUID, str]] = None,
 ) -> "Tool":
-    tool_source = get_tool_source(tool_source_class=tool_source_class, raw_tool_source=raw_tool_source)
+    tool_source = get_tool_source(
+        tool_source_class=tool_source_class, raw_tool_source=raw_tool_source, tool_id=tool_id, uuid=tool_uuid
+    )
     return create_tool_from_source(app, tool_source=tool_source, tool_dir=tool_dir)
 
 

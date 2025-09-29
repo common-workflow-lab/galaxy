@@ -47,7 +47,7 @@ def build_xml_tool_source(xml_string: str) -> XmlToolSource:
 
 def build_cwl_tool_source(yaml_string: str) -> CwlToolSource:
     proxy = tool_proxy_from_persistent_representation(safe_load(yaml_string))
-    return CwlToolSource(tool_proxy=proxy)
+    return CwlToolSource(tool_proxy=proxy, tool_id=proxy.tool_id)
 
 
 def build_yaml_tool_source(yaml_string: str) -> YamlToolSource:
@@ -68,6 +68,7 @@ def get_tool_source(
     tool_location_fetcher: Optional[ToolLocationFetcher] = None,
     macro_paths: Optional[List[str]] = None,
     strict_cwl_validation: bool = True,
+    tool_id: Optional[str] = None,
     uuid: Optional[Union[UUID, str]] = None,
     tool_source_class: Optional[str] = None,
     raw_tool_source: Optional[str] = None,
@@ -107,7 +108,7 @@ def get_tool_source(
             config_file,
         )
         uuid = uuid or uuid4()
-        return CwlToolSource(config_file, strict_cwl_validation=strict_cwl_validation, uuid=uuid)
+        return CwlToolSource(config_file, strict_cwl_validation=strict_cwl_validation, tool_id=tool_id, uuid=uuid)
     else:
         tree, macro_paths = load_tool_with_refereces(config_file)
         return XmlToolSource(tree, source_path=config_file, macro_paths=macro_paths)

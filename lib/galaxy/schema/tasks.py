@@ -165,6 +165,8 @@ class ToolSource(Model):
 
 class QueueJobs(Model):
     tool_source: ToolSource
+    tool_id: str
+    tool_uuid: Optional[UUID] = None
     tool_request_id: int  # links to request ("incoming") and history
     user: RequestUser  # TODO: test anonymous users through this submission path
     use_cached_jobs: bool

@@ -129,11 +129,13 @@ class ToolProxy(metaclass=ABCMeta):
     def __init__(
         self,
         tool: "Process",
+        tool_id: Optional[str],
         uuid: Union[UUID, str],
         raw_process_reference: Optional["RawProcessReference"] = None,
         tool_path: Optional[str] = None,
     ):
         self._tool = tool
+        self.tool_id = tool_id
         self.uuid = uuid
         self._tool_path = tool_path
         self._raw_process_reference = raw_process_reference
@@ -205,6 +207,7 @@ class ToolProxy(metaclass=ABCMeta):
             "class": self._class,
             # Should maybe be yaml instead
             "raw_process_reference": persisted_obj,
+            "tool_id": self.tool_id or self.galaxy_id(),
             "uuid": str(self.uuid),  # UUID is not JSON serializable
         }
 
@@ -219,6 +222,7 @@ class ToolProxy(metaclass=ABCMeta):
             tool_object=as_object["raw_process_reference"],
             strict_cwl_validation=strict_cwl_validation,
             tool_directory=tool_directory,
+            tool_id=as_object.get("tool_id"),
             uuid=as_object.get("uuid"),
         )
         return loaded_object
@@ -755,6 +759,7 @@ def tool_proxy(
     tool_object=None,
     strict_cwl_validation: bool = True,
     tool_directory: Optional[str] = None,
+    tool_id: Optional[str] = None,
     uuid: Optional[Union[UUID, str]] = None,
 ) -> ToolProxy:
     """Provide a proxy object to cwltool data structures to just
@@ -766,6 +771,7 @@ def tool_proxy(
         tool_object=tool_object,
         strict_cwl_validation=strict_cwl_validation,
         tool_directory=tool_directory,
+        tool_id=tool_id,
         uuid=uuid,
     )
 
@@ -803,6 +809,7 @@ def _to_cwl_tool_object(
     tool_object=None,
     strict_cwl_validation: bool = False,
     tool_directory: Optional[str] = None,
+    tool_id: Optional[str] = None,
     uuid: Optional[Union[UUID, str]] = None,
 ) -> ToolProxy:
     if uuid is None:
@@ -839,11 +846,14 @@ def _to_cwl_tool_object(
     # between Galaxy and cwltool.
     _hack_cwl_requirements(cwl_tool)
     check_requirements(raw_tool)
-    return _cwl_tool_object_to_proxy(cwl_tool, uuid, raw_process_reference=raw_process_reference, tool_path=tool_path)
+    return _cwl_tool_object_to_proxy(
+        cwl_tool, tool_id, uuid, raw_process_reference=raw_process_reference, tool_path=tool_path
+    )
 
 
 def _cwl_tool_object_to_proxy(
     cwl_tool: "Process",
+    tool_id: Optional[str],
     uuid: Union[UUID, str],
     raw_process_reference: Optional["RawProcessReference"] = None,
     tool_path: Optional[str] = None,
@@ -862,8 +872,7 @@ def _cwl_tool_object_to_proxy(
     top_level_object = tool_path is not None
     if top_level_object and ("cwlVersion" not in raw_tool):
         raise Exception("File does not declare a CWL version, pre-draft 3 CWL tools are not supported.")
-
-    return proxy_class(cwl_tool, uuid, raw_process_reference, tool_path)
+    return proxy_class(cwl_tool, tool_id, uuid, raw_process_reference, tool_path)
 
 
 def _to_cwl_workflow_object(workflow_path: str, strict_cwl_validation: bool = True) -> WorkflowProxy:
@@ -1060,7 +1069,7 @@ class ToolStepProxy(BaseStepProxy):
     def tool_proxy(self):
         # Needs to be cached so UUID that is loaded matches UUID generated with to_dict.
         if self._tool_proxy is None:
-            self._tool_proxy = _cwl_tool_object_to_proxy(self.cwl_tool_object, uuid=str(uuid4()))
+            self._tool_proxy = _cwl_tool_object_to_proxy(self.cwl_tool_object, None, uuid=str(uuid4()))
         return self._tool_proxy
 
     def tool_reference_proxies(self):
