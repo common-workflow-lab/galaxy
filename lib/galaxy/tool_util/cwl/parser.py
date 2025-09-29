@@ -1137,62 +1137,12 @@ class SubworkflowStepProxy(BaseStepProxy):
 
 
 def _outer_field_to_input_instance(field):
-    field_type = field_to_field_type(field)  # Must be a list if in here?
-    if not isinstance(field_type, list):
-        field_type = [field_type]
-
     name, label, description = _field_metadata(field)
-
-    case_name = "_cwl__type_"
-    case_label = f"Specify Parameter {label} As"
-
-    def value_input(type_description):
-        value_name = "_cwl__value_"
-        value_label = label
-        value_description = description
-        return InputInstance(
-            value_name,
-            value_label,
-            value_description,
-            input_type=type_description.galaxy_param_type,
-            collection_type=type_description.collection_type,
-        )
-
-    select_options = []
-    case_options = []
-    type_descriptions = type_descriptions_for_field_types(field_type)
-    for type_description in type_descriptions:
-        select_options.append({"value": type_description.name, "label": type_description.label})
-        input_instances = []
-        if type_description.uses_param:
-            input_instances.append(value_input(type_description))
-        case_options.append((type_description.name, input_instances))
-
-    # If there is more than one way to represent this parameter - produce a conditional
-    # requesting user to ask for what form they want to submit the data in, else just map
-    # a simple Galaxy parameter.
-    if len(case_options) > 1 and not USE_FIELD_TYPES:
-        case_input = SelectInputInstance(
-            name=case_name,
-            label=case_label,
-            description=False,
-            options=select_options,
-        )
-
-        return ConditionalInstance(name, case_input, case_options)
-    else:
-        if len(case_options) > 1:
-            only_type_description = FIELD_TYPE_REPRESENTATION
-        else:
-            only_type_description = type_descriptions[0]
-
-        return InputInstance(
-            name,
-            label,
-            description,
-            input_type=only_type_description.galaxy_param_type,
-            collection_type=only_type_description.collection_type,
-        )
+    return InputInstance(
+        name,
+        label,
+        description,
+    )
 
     # Older array to repeat handling, now we are just representing arrays as
     # dataset collections - we should offer a blended approach in the future.
