@@ -2979,7 +2979,7 @@ class CwlPopulator:
             galaxy_tool_id, job, history_id, tool_uuid=tool_uuid
         )
         if assert_ok:
-            tool_request_response.raise_for_status()
+            api_asserts.assert_status_code_is(tool_request_response, 200)
         tool_request_id = tool_request_response.json()["tool_request_id"]
         return CwlToolRun(self.dataset_populator, history_id, tool_request_id)
 

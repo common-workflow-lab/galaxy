@@ -459,10 +459,11 @@ class PagesSource:
 
     def __init__(self, page_sources):
         self.page_sources = page_sources
+        self._inputs_defined = True
 
     @property
     def inputs_defined(self):
-        return True
+        return self._inputs_defined
 
 
 class DynamicOptions(metaclass=ABCMeta):
@@ -612,6 +613,9 @@ class PageSource(metaclass=ABCMeta):
     @abstractmethod
     def parse_input_sources(self) -> List[InputSource]:
         """Return a list of InputSource objects."""
+
+    def renders_form(self) -> bool:
+        return True
 
 
 AnyTestCollectionDefDict = Union["JsonTestCollectionDefDict", "XmlTestCollectionDefDict"]

@@ -220,12 +220,10 @@ class CwlToolSource(ToolSource):
         return []
 
     def parse_input_pages(self) -> PagesSource:
-        gx_interface = self._get_gx_interface()
-        if gx_interface is None:
-            page_source: PageSource = CwlPageSource(self.tool_proxy)
-        else:
-            page_source = YamlPageSource(gx_interface["inputs"])
-        return PagesSource([page_source])
+        page_source: PageSource = CwlPageSource(self.tool_proxy)
+        pages_source = PagesSource([page_source])
+        pages_source._inputs_defined = False
+        return pages_source
 
     def parse_outputs(self, app: Optional[ToolOutputActionApp]):
         output_instances = self.tool_proxy.output_instances()
@@ -354,6 +352,9 @@ class CwlInputSource(YamlInputSource):
     @property
     def field(self):
         return self._field
+
+    def parse_input_type(self):
+        return "param"
 
 
 class CwlPageSource(PageSource):

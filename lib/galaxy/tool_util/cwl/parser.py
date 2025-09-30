@@ -1216,15 +1216,11 @@ class SelectInputInstance:
 
 
 class InputInstance:
-    def __init__(self, name, label, description, input_type, array=False, area=False, collection_type=None):
-        self.input_type = input_type
-        self.collection_type = collection_type
+    def __init__(self, name, label, description):
         self.name = name
         self.label = label
         self.description = description
         self.required = True
-        self.array = array
-        self.area = area
 
     @overload
     def to_dict(self, itemwise: Literal[False]) -> InputInstanceDict: ...
@@ -1233,28 +1229,11 @@ class InputInstance:
     def to_dict(self, itemwise: Literal[True]) -> Union[InputInstanceDict, InputInstanceArrayDict]: ...
 
     def to_dict(self, itemwise: bool = True) -> Union[InputInstanceDict, InputInstanceArrayDict]:
-        if itemwise and self.array:
-            return InputInstanceArrayDict(
-                type="repeat", name=f"{self.name}_repeat", title=f"{self.name}", blocks=[self.to_dict(itemwise=False)]
-            )
-        else:
-            as_dict = InputInstanceDict(
-                name=self.name,
-                label=self.label or self.name,
-                help=self.description,
-                type=self.input_type,
-                optional=not self.required,
-            )
-            if self.area:
-                as_dict["area"] = True
-
-            if self.input_type == INPUT_TYPE.INTEGER:
-                as_dict["value"] = "0"
-            if self.input_type == INPUT_TYPE.FLOAT:
-                as_dict["value"] = "0.0"
-            elif self.input_type == INPUT_TYPE.DATA_COLLECTION:
-                as_dict["collection_type"] = self.collection_type
-            return as_dict
+        return {
+            "name": self.name,
+            "label": self.label or self.name,
+            "help": self.description,
+        }
 
 
 OUTPUT_TYPE = Bunch(

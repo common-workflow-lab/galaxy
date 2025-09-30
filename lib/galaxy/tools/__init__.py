@@ -12,6 +12,7 @@ import shlex
 import tarfile
 import tempfile
 from collections.abc import MutableMapping
+from copy import deepcopy
 from pathlib import Path
 from typing import (
     Any,
@@ -1708,6 +1709,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         """
         # Load parameters (optional)
         self.inputs: ToolInputsT = {}
+        self.has_galaxy_inputs = False
         pages = tool_source.parse_input_pages()
         enctypes: set[str] = set()
         try:
@@ -1716,6 +1718,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         except Exception:
             pass
         if pages.inputs_defined:
+            self.has_galaxy_inputs = True
             if hasattr(pages, "input_elem"):
                 input_elem = pages.input_elem
                 # Handle properties of the input form
@@ -2150,9 +2153,15 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         expanded_incomings: list[ToolStateJobInstanceExpansionT]
         job_tool_states: list[ToolStateJobInstanceT]
         collection_info: Optional[MatchingCollections]
-        expanded_incomings, job_tool_states, collection_info = expand_meta_parameters_async(
-            request_context.app, self, tool_request_internal_state
-        )
+        if self.has_galaxy_inputs:
+            expanded_incomings, job_tool_states, collection_info = expand_meta_parameters_async(
+                request_context.app, self, tool_request_internal_state
+            )
+        else:
+            # No inputs, so just one job with no parameters
+            expanded_incomings = [deepcopy(tool_request_internal_state.input_state)]
+            job_tool_states = [deepcopy(tool_request_internal_state.input_state)]
+            collection_info = None
 
         self._ensure_expansion_is_valid(job_tool_states, rerun_remap_job_id)
 
@@ -2167,7 +2176,11 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         for expanded_incoming, job_tool_state in zip(expanded_incomings, job_tool_states):
             expanded_incoming = fill_static_defaults(expanded_incoming, self, self.profile)
             job_tool_state = fill_static_defaults(job_tool_state, self, self.profile)
-            params, errors = self._populate_async(request_context, expanded_incoming)
+            if self.has_galaxy_inputs:
+                params, errors = self._populate_async(request_context, expanded_incoming)
+            else:
+                params = expanded_incoming
+                errors = {}
             # params have had dynamic defaults requiring like dataset contents expanded out
             # so we can use that backfill job_tool_state
             fill_dynamic_defaults(request_context, self.inputs, job_tool_state, params)
@@ -2807,7 +2820,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             e.args = (f"Error in '{self.name}' hook '{hook_name}', original message: {original_message}",)
             raise
 
-    def exec_before_job(self, app, inp_data, out_data, param_dict=None):
+    def exec_before_job(self, app, inp_data, out_data, param_dict=None, validated_tool_state: Optional[JobInternalToolState] = None):
         pass
 
     def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state: Optional[str] = None):
@@ -3319,7 +3332,7 @@ class OutputParameterJSONTool(Tool):
                 rval[key] = str(value)
         return rval
 
-    def exec_before_job(self, app, inp_data, out_data, param_dict=None):
+    def exec_before_job(self, app, inp_data, out_data, param_dict=None, validated_tool_state: Optional[JobInternalToolState] = None):
         if param_dict is None:
             param_dict = {}
         json_params = {}
@@ -3385,7 +3398,7 @@ class ExpressionTool(Tool):
                 message = "Expression tools may not declare output datasets at this time."
                 raise Exception(message)
 
-    def exec_before_job(self, app, inp_data, out_data, param_dict=None):
+    def exec_before_job(self, app, inp_data, out_data, param_dict=None, validated_tool_state: Optional[JobInternalToolState] = None):
         super().exec_before_job(app, inp_data, out_data, param_dict=param_dict)
         local_working_directory = param_dict["__local_working_directory__"]
         expression_inputs_path = os.path.join(local_working_directory, ExpressionTool.EXPRESSION_INPUTS_NAME)
@@ -3507,7 +3520,7 @@ class DataSourceTool(OutputParameterJSONTool):
             self.inputs["GALAXY_URL"] = self._build_GALAXY_URL_parameter()
             self.inputs_by_page[0]["GALAXY_URL"] = self.inputs["GALAXY_URL"]
 
-    def exec_before_job(self, app, inp_data, out_data, param_dict=None):
+    def exec_before_job(self, app, inp_data, out_data, param_dict=None, validated_tool_state: Optional[JobInternalToolState] = None):
         if param_dict is None:
             param_dict = {}
         dbkey = param_dict.get("dbkey")
@@ -3693,7 +3706,7 @@ class InteractiveTool(Tool):
 class CwlCommandBindingTool(Tool):
     """Tools that use CWL to bind parameters to command-line descriptions."""
 
-    def exec_before_job(self, app, inp_data, out_data, param_dict=None):
+    def exec_before_job(self, app, inp_data, out_data, param_dict=None, validated_tool_state: Optional[JobInternalToolState] = None):
         super().exec_before_job(app, inp_data, out_data, param_dict=param_dict)
         # Working directory on Galaxy server (instead of remote compute).
         local_working_directory = param_dict["__local_working_directory__"]
@@ -3701,7 +3714,7 @@ class CwlCommandBindingTool(Tool):
         if param_dict is None:
             raise Exception("Internal error - param_dict is empty.")
 
-        input_json = self.param_dict_to_cwl_inputs(param_dict, local_working_directory)
+        input_json = validated_tool_state.input_state
 
         output_dict = {}
         for name, dataset in out_data.items():

@@ -449,9 +449,8 @@ def input_models_for_tool_source(tool_source: ToolSource) -> ToolParameterBundle
 
 def input_models_for_pages(pages: PagesSource, profile: float) -> List[ToolParameterT]:
     input_models = []
-    if pages.inputs_defined:
-        for page_source in pages.page_sources:
-            input_models.extend(input_models_for_page(page_source, profile))
+    for page_source in pages.page_sources:
+        input_models.extend(input_models_for_page(page_source, profile))
 
     return input_models
 

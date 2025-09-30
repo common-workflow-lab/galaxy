@@ -34,6 +34,7 @@ from galaxy.structured_app import (
     MinimalToolApp,
 )
 from galaxy.tool_util.data import TabularToolDataTable
+from galaxy.tool_util.parameters import JobInternalToolState
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tool_util_models.tool_source import (
     FileSourceConfigFile,
@@ -206,7 +207,12 @@ class ToolEvaluator:
                 out_data,
                 output_collections=out_collections,
             )
-            self.execute_tool_hooks(inp_data=inp_data, out_data=out_data, incoming=incoming)
+            internal_tool_state = None
+            if job.tool_state:
+                internal_tool_state = JobInternalToolState(job.tool_state)
+                internal_tool_state.validate(self.tool, f"{self.tool.id} (job internal model)")
+
+            self.execute_tool_hooks(inp_data=inp_data, out_data=out_data, incoming=incoming, validated_tool_state=internal_tool_state)
 
         else:
             self.param_dict = self.build_param_dict(
@@ -216,13 +222,13 @@ class ToolEvaluator:
                 output_collections=out_collections,
             )
 
-    def execute_tool_hooks(self, inp_data, out_data, incoming):
+    def execute_tool_hooks(self, inp_data, out_data, incoming, validated_tool_state: Optional[JobInternalToolState] = None):
         # Certain tools require tasks to be completed prior to job execution
         # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
-        self.tool.exec_before_job(self.app, inp_data, out_data, self.param_dict)
+        self.tool.exec_before_job(self.app, inp_data, out_data, self.param_dict, validated_tool_state=validated_tool_state)
         # Run the before queue ("exec_before_job") hook
         self.tool.call_hook(
-            "exec_before_job", self.app, inp_data=inp_data, out_data=out_data, tool=self.tool, param_dict=incoming
+            "exec_before_job", self.app, inp_data=inp_data, out_data=out_data, tool=self.tool, param_dict=incoming, validated_tool_state=validated_tool_state
         )
 
     def build_param_dict(self, incoming, input_datasets, output_datasets, output_collections):
